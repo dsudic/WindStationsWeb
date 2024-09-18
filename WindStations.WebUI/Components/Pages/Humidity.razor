@@ -1,0 +1,76 @@
+﻿@page "/humidity"
+
+<h3>Humidity</h3>
+
+<div style="height: 450px">
+    @if (humidities == null)
+    {
+        <SfSkeleton Width="100%" Height="100%" Effect="ShimmerEffect.Wave"></SfSkeleton>
+    }
+    else
+    {
+        <SfChart Background="transparent">
+            <ChartArea>
+                <ChartAreaBorder Width="0"></ChartAreaBorder>
+            </ChartArea>
+
+            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category" LabelPlacement="LabelPlacement.OnTicks" EdgeLabelPlacement="EdgeLabelPlacement.Shift" PlotOffset="10">
+                <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+                <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+            </ChartPrimaryXAxis>
+
+            <ChartPrimaryYAxis LabelFormat="{value} %" RangePadding="ChartRangePadding.Auto" Minimum="0">
+                <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+                <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+            </ChartPrimaryYAxis>
+
+            <ChartTooltipSettings Enable="true" Header="${point.x}" Format="${point.y}"></ChartTooltipSettings>
+
+            <ChartSeriesCollection>
+                <ChartSeries DataSource="@humidities" XName="Time" YName="Humidity" Fill="url(#humidity-gradient)" Type="ChartSeriesType.Area">
+                    <ChartSeriesBorder Width="2" Color="#00810a"></ChartSeriesBorder>
+                    <ChartMarker>
+                        <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Top">
+                            <Template>
+                                <div>@Math.Round(Convert.ToDouble(context.PointY))</div>
+                            </Template>
+                        </ChartDataLabel>
+                    </ChartMarker>
+                </ChartSeries>
+            </ChartSeriesCollection>
+        </SfChart>
+
+        <svg style="height: 0">
+            <defs>
+                <linearGradient id="humidity-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                    <stop offset="0%" style="stop-color: white; stop-opacity: 0.5" />
+                    <stop offset="100%" style="stop-color: #308136; stop-opacity: 0.5" />
+                </linearGradient>
+            </defs>
+        </svg>
+    }
+</div>
+
+@code {
+    private class Environment
+    {
+        public string Time { get; set; }
+        public double Humidity { get; set; }
+    }
+
+    private List<Environment> humidities = new List<Environment>
+    {
+        new Environment { Time = "11h", Humidity = 40.3 },
+        new Environment { Time = "12h", Humidity = 33.4 },
+        new Environment { Time = "13h", Humidity = 38.3 },
+        new Environment { Time = "14h", Humidity = 36.7 },
+        new Environment { Time = "15h", Humidity = 35.1 },
+        new Environment { Time = "16h", Humidity = 34.2 },
+        new Environment { Time = "17h", Humidity = 39.7 },
+        new Environment { Time = "18h", Humidity = 38.7 },
+        new Environment { Time = "19h", Humidity = 42.5 },
+        new Environment { Time = "20h", Humidity = 50.22 },
+        new Environment { Time = "21h", Humidity = 49.3 },
+        new Environment { Time = "22h", Humidity = 48.5 }
+    };
+}

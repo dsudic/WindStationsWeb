@@ -3,6 +3,8 @@ using WindStations.Core.Interfaces;
 using WindStations.Infrastructure.Data;
 using WindStations.Infrastructure.Services;
 using WindStations.WebUI.Components;
+using Syncfusion.Blazor;
+using WindStations.WebUI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,12 +13,15 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddBlazorBootstrap();
+builder.Services.AddSyncfusionBlazor();
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(builder.Configuration.GetValue<string>("SyncfusionLicense"));
 
 builder.Services.AddDbContextFactory<WindStationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("WindStationsDatabase")),
     ServiceLifetime.Transient);
 builder.Services.AddSingleton<IMqttClientService, MqttClientService>();
 builder.Services.AddTransient<IMessagePersistenceService, MessagePersistenceService>();
+builder.Services.AddSingleton<GradientService>();
 
 var app = builder.Build();
 

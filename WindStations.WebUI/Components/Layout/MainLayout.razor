@@ -1,15 +1,27 @@
 ﻿@inherits LayoutComponentBase
+@using Syncfusion.Blazor.Navigations
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+<div class="main-container">
+    <SfAppBar CssClass="custom-appbar">
+        <img src="images/windsock.png" width="30" alt="Wind sock" style="margin: 0px 10px" />
+        <div style="font-size:22px; font-weight:600">
+            WindStation Omiš
+            <i id="@(online ? "online" : "offline")" class="bi bi-circle-fill" style="margin-left: 10px"></i>
+        </div>
+
+        <AppBarSpacer></AppBarSpacer>
+
+        <img src="images/battery.png" width="26" alt="Battery" />
+        <div style="margin-right: 5px; font-size: 18px">
+            @(batteryStatus)%
+        </div>
+    </SfAppBar>
+
+    <Cards></Cards>
+
+    <div style="padding: 20px 0px">
+        @Body
     </div>
-
-    <main>
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
 </div>
 
 <div id="blazor-error-ui">
@@ -17,3 +29,8 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    bool online = false;
+    double batteryStatus = 89;
+}

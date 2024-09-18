@@ -1,1 +1,1 @@
-# <img src="./WindStations.WebUI/wwwroot/wind_favicon.png" alt="Wind sock" width="28"> WindStations
+# <img src="./WindStations.WebUI/wwwroot/images/windsock.png" alt="Wind sock" width="28"> WindStations

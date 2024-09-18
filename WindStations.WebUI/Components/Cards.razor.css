@@ -1,0 +1,104 @@
+﻿.cards-container {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    margin-top: 10px;
+}
+
+::deep .nav-card {
+    padding: 5px 10px;
+}
+
+.e-card {
+    padding-left: 5%;
+    border-radius: 6px;
+}
+
+    .e-card h3, #wind-direction {
+        margin: 5% 0 0 0;
+    }
+
+#wind.e-card.selected {
+    background-image: linear-gradient(45deg, var(--wind-color) 10%, white 115%);
+    color: white;
+}
+
+#temperature.e-card.selected {
+    background-image: linear-gradient(45deg, var(--temperature-color) 10%, white 115%);
+    color: white;
+}
+
+#humidity.e-card.selected {
+    background-image: linear-gradient(45deg, var(--humidity-color) 10%, white 115%);
+    color: white;
+}
+
+#pressure.e-card.selected {
+    background-image: linear-gradient(45deg, var(--pressure-color) 10%, white 115%);
+    color: white;
+}
+
+.selected svg.card-icon g, .selected #wind-direction g {
+    fill: white;
+}
+
+#wind:hover {
+    color: var(--wind-color);
+}
+
+#wind.low:hover, #wind.low.selected, #wind.low.selected svg.card-icon g, #wind.low.selected #wind-direction g {
+    color: black;
+    fill: black;
+}
+
+#temperature:hover {
+    color: var(--temperature-color);
+}
+
+#humidity:hover {
+    color: var(--humidity-color);
+}
+
+#pressure:hover {
+    color: var(--pressure-color);
+}
+
+.e-card:hover svg g {
+    fill: currentColor;
+}
+
+::deep a {
+    text-decoration: none !important;
+}
+
+::deep .card-icon {
+    float: right;
+    margin-right: 5%;
+    margin-bottom: 3%;
+    width: 35px;
+}
+
+#wind-direction {
+    margin-left: 20px;
+    width: 17px;
+    height: 22px;
+}
+
+@media (min-width: 992px) {
+    .cards-container {
+        margin-top: 20px;
+    }
+
+    ::deep .card-icon {
+        width: 50px;
+    }
+
+    ::deep .nav-card {
+        padding: 5px 20px;
+    }
+
+    #wind-direction {
+        width: 20px;
+        height: 25px;
+    }
+}
