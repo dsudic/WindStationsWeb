@@ -1,16 +1,18 @@
 ﻿@inject WindStations.WebUI.Services.GradientService gradientService
+@inject WindStations.Core.Interfaces.IWindService windService
+@inject WindStations.Core.Interfaces.IEnvironmentService environmentService
 
 <div class="cards-container">
     <NavLink href="wind" class="col-6 col-lg-3 nav-card">
-        @if (true)
+        @if (_isDataReady)
         {
-            <div id="wind" class="e-card @isWindSelected @((currentSpeed < gradientService.WindGradients[0].Max) ? "low" : "")"
-                 style="--wind-color: @gradientService.GetRangeColor(currentSpeed)" @onclick="windClick">
+            <div id="wind" class="e-card @_isWindSelected @((_currentWindSpeed < gradientService.WindGradients[0].Max) ? "low" : "")"
+                 style="--wind-color: @gradientService.GetRangeColor(_currentWindSpeed)" @onclick="windClick">
                 <div style="display: flex; justify-content: flex-start">
-                    <h3>@currentSpeed kts</h3>
+                    <h3>@_currentWindSpeed kts</h3>
                     @* <img id="wind-direction" src="images/arrow.png" alt="Direction" style="transform: rotate(@(direction)deg)" /> *@
                     <svg id="wind-direction" version="1.0" xmlns="http://www.w3.org/2000/svg"
-                         viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet" style="transform: rotate(@(direction)deg)">
+                         viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet" style="transform: rotate(@(_currentWindDirection)deg)">
                         <g transform="translate(0,512) scale(0.1,-0.1)"
                            fill="#000000" stroke="none">
                             <path d="M306 5110 c-81 -25 -137 -130 -115 -214 11 -40 2142 -4667 2202
@@ -65,10 +67,10 @@
     </NavLink>
 
     <NavLink href="temperature" class="col-6 col-lg-3 nav-card">
-        @if (true)
+        @if (_isDataReady)
         {
-            <div id="temperature" class="e-card @isTemperatureSelected" style="--temperature-color: #e56c30" @onclick="temperatureClick">
-                <h3>27.3 °C</h3>
+            <div id="temperature" class="e-card @_isTemperatureSelected" style="--temperature-color: #e56c30" @onclick="temperatureClick">
+                <h3>@(_currentTemperature) °C</h3>
                 <div>
                     <span>Temperature</span>
                     @* <img src="images/temperature.png" alt="Temperature" class="card-icon" /> *@
@@ -114,10 +116,10 @@
     </NavLink>
 
     <NavLink href="humidity" class="col-6 col-lg-3 nav-card">
-        @if (true)
+        @if (_isDataReady)
         {
-            <div id="humidity" class="e-card @isHumiditySelected" style="--humidity-color: #308136" @onclick="humidityClick">
-                <h3>46%</h3>
+            <div id="humidity" class="e-card @_isHumiditySelected" style="--humidity-color: #308136" @onclick="humidityClick">
+                <h3>@(_currentHumidity)%</h3>
                 <div>
                     <span>Humidity</span>
                     @* <img src="images/humidity.png" alt="Humidity" class="card-icon" /> *@
@@ -158,10 +160,10 @@
     </NavLink>
 
     <NavLink href="pressure" class="col-6 col-lg-3 nav-card">
-        @if (true)
+        @if (_isDataReady)
         {
-            <div id="pressure" class="e-card @isPressureSelected" style="--pressure-color: #2140dc" @onclick="pressureClick">
-                <h3>1013 hPa</h3>
+            <div id="pressure" class="e-card @_isPressureSelected" style="--pressure-color: #2140dc" @onclick="pressureClick">
+                <h3>@(_currentPressure) hPa</h3>
                 <div>
                     <span>Pressure</span>
                     @* <img src="images/pressure.png" width="50" alt="Pressure" class="card-icon" /> *@
@@ -219,43 +221,56 @@
 </div>
 
 @code {
-    double direction = 45;
-    double currentSpeed = 52.7;
+    private float _currentWindDirection;
+    private float _currentWindSpeed;
+    private short _currentTemperature;
+    private byte _currentHumidity;
+    private ushort _currentPressure;
+    private string _isWindSelected = "selected";
+    private string _isTemperatureSelected = "";
+    private string _isHumiditySelected = "";
+    private string _isPressureSelected = "";
+    private bool _isDataReady = false;
 
-    string isWindSelected = "selected";
-    string isTemperatureSelected = "";
-    string isHumiditySelected = "";
-    string isPressureSelected = "";
+    protected override async Task OnInitializedAsync()
+    {
+        _currentWindDirection = await windService.GetLatestDirectionAsync();
+        _currentWindSpeed = (float)Math.Round(await windService.GetLatestAvgSpeedAsync());
+        _currentTemperature = (short)Math.Round(await environmentService.GetLatestTemperatureAsync());
+        _currentHumidity = (byte)Math.Round(await environmentService.GetLatestHumidityAsync());
+        _currentPressure = (ushort)Math.Round(await environmentService.GetLatestPressureAsync());
+        _isDataReady = true;
+    }
 
     private void windClick()
     {
-        isWindSelected = "selected";
-        isTemperatureSelected = "";
-        isHumiditySelected = "";
-        isPressureSelected = "";
+        _isWindSelected = "selected";
+        _isTemperatureSelected = "";
+        _isHumiditySelected = "";
+        _isPressureSelected = "";
     }
 
     private void temperatureClick()
     {
-        isWindSelected = "";
-        isTemperatureSelected = "selected";
-        isHumiditySelected = "";
-        isPressureSelected = "";
+        _isWindSelected = "";
+        _isTemperatureSelected = "selected";
+        _isHumiditySelected = "";
+        _isPressureSelected = "";
     }
 
     private void humidityClick()
     {
-        isWindSelected = "";
-        isTemperatureSelected = "";
-        isHumiditySelected = "selected";
-        isPressureSelected = "";
+        _isWindSelected = "";
+        _isTemperatureSelected = "";
+        _isHumiditySelected = "selected";
+        _isPressureSelected = "";
     }
 
     private void pressureClick()
     {
-        isWindSelected = "";
-        isTemperatureSelected = "";
-        isHumiditySelected = "";
-        isPressureSelected = "selected";
+        _isWindSelected = "";
+        _isTemperatureSelected = "";
+        _isHumiditySelected = "";
+        _isPressureSelected = "selected";
     }
 }

@@ -21,6 +21,9 @@ builder.Services.AddDbContextFactory<WindStationDbContext>(options =>
     ServiceLifetime.Transient);
 builder.Services.AddSingleton<IMqttClientService, MqttClientService>();
 builder.Services.AddTransient<IMessagePersistenceService, MessagePersistenceService>();
+builder.Services.AddTransient<IWindService, WindService>();
+builder.Services.AddTransient<IEnvironmentService, EnvironmentService>();
+builder.Services.AddTransient<IBatteryService, BatteryService>();
 builder.Services.AddSingleton<GradientService>();
 
 var app = builder.Build();

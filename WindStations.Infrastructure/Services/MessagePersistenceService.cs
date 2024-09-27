@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using WindStations.Core.Interfaces;
-using WindStations.Core.Models;
 using WindStations.Core.Services;
 using WindStations.Infrastructure.Data;
 
@@ -29,20 +28,11 @@ public class MessagePersistenceService(WindStationDbContext dbContext) : IMessag
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task<List<Anemometer>> GetAnemometerAsync()
+    public async Task<DateTime> GetLatestTimestampAsync()
     {
-        return await dbContext.Anemometer.ToListAsync();
-    }
-    public async Task<List<Vane>> GetVaneAsync()
-    {
-        return await dbContext.Vane.ToListAsync();
-    }
-    public async Task<List<Core.Models.Environment>> GetEnvironmentAsync()
-    {
-        return await dbContext.Environment.ToListAsync();
-    }
-    public async Task<float> GetBatteryStatusAsync()
-    {
-        return await dbContext.Battery.Select(battery => battery.Voltage).LastAsync();
+        return await dbContext.Anemometer
+            .OrderByDescending(a => a.TimeStamp)
+            .Select(a => a.TimeStamp)
+            .FirstAsync();
     }
 }

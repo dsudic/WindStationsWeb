@@ -1,9 +1,11 @@
 ﻿@page "/temperature"
+@using WindStations.WebUI.Components.ChartDataPointModels
+@inject WindStations.Core.Interfaces.IEnvironmentService environmentService
 
 <h3>Temperature</h3>
 
 <div style="height: 450px">
-    @if (temperatures == null)
+    @if (_temperatureData is null)
     {
         <SfSkeleton Width="100%" Height="100%" Effect="ShimmerEffect.Wave"></SfSkeleton>
     }
@@ -14,7 +16,12 @@
                 <ChartAreaBorder Width="0"></ChartAreaBorder>
             </ChartArea>
 
-            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category" LabelPlacement="LabelPlacement.OnTicks" EdgeLabelPlacement="EdgeLabelPlacement.Shift" PlotOffset="10">
+            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime"
+                               Format="HH:mm:ss"
+                               LabelFormat="HH:mm"
+                               LabelPlacement="LabelPlacement.OnTicks"
+                               EdgeLabelPlacement="EdgeLabelPlacement.Shift"
+                               PlotOffset="10">
                 <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
                 <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
             </ChartPrimaryXAxis>
@@ -24,7 +31,14 @@
                 <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
 
                 <ChartStriplines>
-                    <ChartStripline Start=@temperatures.Max(t => t.Temperature) SizeType="SizeType.Pixel" DashArray="3,3" Size="1" Color="#d93237" Text="Max" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.End">
+                    <ChartStripline Start=@_temperatureData.Max(temperature => temperature.Value)
+                                    SizeType="SizeType.Pixel"
+                                    DashArray="3,3"
+                                    Size="1"
+                                    Color="#d93237"
+                                    Text="Max"
+                                    HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End"
+                                    VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.End">
                         <ChartStriplineTextStyle Color="#d93237" Size="14px" FontWeight="500" FontStyle="Roboto"></ChartStriplineTextStyle>
                     </ChartStripline>
                 </ChartStriplines>
@@ -33,12 +47,16 @@
             <ChartTooltipSettings Enable="true" Header="${point.x}" Format="${point.y}"></ChartTooltipSettings>
 
             <ChartSeriesCollection>
-                <ChartSeries DataSource="@temperatures" XName="Time" YName="Temperature" Fill="url(#temperature-gradient)" Type="ChartSeriesType.Area">
+                <ChartSeries DataSource="@_temperatureData"
+                             XName="Timestamp"
+                             YName="Value"
+                             Fill="url(#temperature-gradient)"
+                             Type="ChartSeriesType.Area">
                     <ChartSeriesBorder Width="2" Color="#e94d00"></ChartSeriesBorder>
                     <ChartMarker>
                         <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Top">
                             <Template>
-                                <div>@Math.Round(Convert.ToDouble(context.PointY))</div>
+                                <div>@Math.Round(Convert.ToDouble(context.PointY), 1)</div>
                             </Template>
                         </ChartDataLabel>
                     </ChartMarker>
@@ -58,25 +76,12 @@
 </div>
 
 @code {
-    private class Environment
-    {
-        public string Time { get; set; }
-        public double Temperature { get; set; }
-    }
+    private List<EnvironmentDataPoint>? _temperatureData;
 
-    private List<Environment> temperatures = new List<Environment>
+    protected override void OnInitialized()
     {
-        new Environment { Time = "11h", Temperature = 35.5 },
-        new Environment { Time = "12h", Temperature = 33.3 },
-        new Environment { Time = "13h", Temperature = 38.2 },
-        new Environment { Time = "14h", Temperature = 31.8 },
-        new Environment { Time = "15h", Temperature = 36.6 },
-        new Environment { Time = "16h", Temperature = 32.5 },
-        new Environment { Time = "17h", Temperature = 34.3 },
-        new Environment { Time = "18h", Temperature = 30.1 },
-        new Environment { Time = "19h", Temperature = 28.11 },
-        new Environment { Time = "20h", Temperature = 25.34 },
-        new Environment { Time = "21h", Temperature = 22.6 },
-        new Environment { Time = "22h", Temperature = 21.3 }
-    };
+        _temperatureData = environmentService.GetTemperatureData()
+        .Select(temperature => new EnvironmentDataPoint(timestamp: temperature.Timestamp, value: temperature.Value))
+        .ToList();
+    }
 }

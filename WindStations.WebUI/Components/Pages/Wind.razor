@@ -1,12 +1,14 @@
 ﻿@page "/"
 @page "/wind"
 @using System.Drawing
+@using WindStations.WebUI.Components.ChartDataPointModels
+@inject WindStations.Core.Interfaces.IWindService windService
 @inject WindStations.WebUI.Services.GradientService gradientService
 
 <h3>Wind</h3>
 
 <div style="height: 450px">
-    @if (wind == null)
+    @if (_windData is null)
     {
         <SfSkeleton Width="100%" Height="100%" Effect="ShimmerEffect.Wave"></SfSkeleton>
     }
@@ -17,18 +19,29 @@
                 <ChartAreaBorder Width="0"></ChartAreaBorder>
             </ChartArea>
 
-            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category" LabelPlacement="LabelPlacement.OnTicks" EdgeLabelPlacement="EdgeLabelPlacement.Shift" PlotOffset="10">
+            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime"
+                               Format="HH:mm:ss"
+                               LabelFormat="HH:mm"
+                               LabelPlacement="LabelPlacement.OnTicks"
+                               EdgeLabelPlacement="EdgeLabelPlacement.Shift"
+                               PlotOffset="10">
                 <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
                 <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
             </ChartPrimaryXAxis>
 
             <ChartPrimaryYAxis LabelFormat="{value} kts" RangePadding="ChartRangePadding.Auto" Minimum="0">
-
                 <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
                 <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
 
                 <ChartStriplines>
-                    <ChartStripline Start=@wind.Max(m => m.Max) SizeType="SizeType.Pixel" DashArray="3,3" Size="1" Color="#D93237" Text="Max" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.End">
+                    <ChartStripline Start=@_windData.Max(w => w.MaxSpeed)
+                                    SizeType="SizeType.Pixel"
+                                    DashArray="3,3"
+                                    Size="1"
+                                    Color="#D93237"
+                                    Text="Max"
+                                    HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End"
+                                    VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.End">
                         <ChartStriplineTextStyle Color="#D93237" Size="14px" FontWeight="500" FontFamily="Roboto"></ChartStriplineTextStyle>
                     </ChartStripline>
                 </ChartStriplines>
@@ -58,7 +71,7 @@
                                     </td>
                                     <td>
                                         <img src="images/arrow.png" alt="Arrow" height="13" width="8"
-                                             style="transform: rotate(@(wind[(int)data[0].PointIndex].Direction)deg); margin: auto 10px; filter: invert(100%)" />
+                                             style="transform: rotate(@(_windData[(int)data[0].PointIndex].Direction)deg); margin: auto 10px; filter: invert(100%)" />
                                     </td>
                                 </tr>
                                 <tr>
@@ -72,13 +85,17 @@
             </ChartTooltipSettings>
 
             <ChartSeriesCollection>
-                <ChartSeries DataSource="@wind" XName="Time" YName="Max" Fill="url(#wind-gradient)" Type="ChartSeriesType.SplineArea">
+                <ChartSeries DataSource="@_windData"
+                             XName="Timestamp"
+                             YName="MaxSpeed"
+                             Fill="url(#wind-gradient)"
+                             Type="ChartSeriesType.SplineArea">
                     <ChartMarker Visible="false">
                         <ChartDataLabel Visible="true" Name="Direction" Position="Syncfusion.Blazor.Charts.LabelPosition.Top">
                             <Template>
                                 @{
                                     var data = context as ChartDataPointInfo;
-                                    <div>@Math.Round(Convert.ToDouble(data.Y))</div>
+                                    <div>@Math.Round(Convert.ToDouble(data.Y), 1)</div>
                                 }
                             </Template>
                         </ChartDataLabel>
@@ -87,7 +104,11 @@
             </ChartSeriesCollection>
 
             <ChartSeriesCollection>
-                <ChartSeries DataSource="@wind" XName="Time" YName="Avg" Fill="black" Type="ChartSeriesType.Spline">
+                <ChartSeries DataSource="@_windData"
+                             XName="Timestamp"
+                             YName="AvgSpeed"
+                             Fill="black"
+                             Type="ChartSeriesType.Spline">
                     <ChartMarker Visible="true" Fill="black" Height="3" Width="3" Shape="ChartShape.Circle">
                         <ChartDataLabel Visible="true" Name="Direction" Position="Syncfusion.Blazor.Charts.LabelPosition.Bottom">
                             <Template>
@@ -105,7 +126,12 @@
             </ChartSeriesCollection>
 
             <ChartSeriesCollection>
-                <ChartSeries DataSource="@wind" XName="Time" YName="Min" Fill="gray" DashArray="5,5" Type="ChartSeriesType.Spline">
+                <ChartSeries DataSource="@_windData"
+                             XName="Timestamp"
+                             YName="MinSpeed"
+                             Fill="gray"
+                             DashArray="5,5"
+                             Type="ChartSeriesType.Spline">
                 </ChartSeries>
             </ChartSeriesCollection>
 
@@ -114,7 +140,7 @@
         <svg style="height: 0">
             <defs>
                 <linearGradient id="wind-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
-                    @((MarkupString)gradientService.GetGradientStops(wind.Max(m => m.Max)))
+                    @((MarkupString)gradientService.GetGradientStops(_windData.Max(m => m.MaxSpeed)))
                 </linearGradient>
             </defs>
         </svg>
@@ -122,28 +148,17 @@
 </div>
 
 @code {
-    private class WindData
-    {
-        public string Time { get; set; }
-        public double Min { get; set; }
-        public double Avg { get; set; }
-        public double Max { get; set; }
-        public double Direction { get; set; }
-    }
+    private List<WindDataPoint>? _windData;
 
-    private List<WindData> wind = new List<WindData>
+    protected override void OnInitialized()
     {
-        new WindData { Time = "11h", Max = 3.7, Avg = 3, Min = 2, Direction = 45 },
-        new WindData { Time = "12h", Max = 8.2, Avg = 6.5, Min = 4, Direction = 0 },
-        new WindData { Time = "13h", Max = 6.3, Avg = 4.1, Min = 2, Direction = 90 },
-        new WindData { Time = "14h", Max = 12.8, Avg = 8, Min = 7, Direction = 11 },
-        new WindData { Time = "15h", Max = 29.3, Avg = 20, Min = 17, Direction = 76 },
-        new WindData { Time = "16h", Max = 13.1, Avg = 12.3, Min = 12, Direction = 343 },
-        new WindData { Time = "17h", Max = 18.9, Avg = 16.4, Min = 15, Direction = 267 },
-        new WindData { Time = "18h", Max = 17, Avg = 15, Min = 14, Direction = 116 },
-        new WindData { Time = "19h", Max = 16.5, Avg = 11.2, Min = 9, Direction = 61 },
-        new WindData { Time = "20h", Max = 52.7, Avg = 25.3, Min = 17, Direction = 23 },
-        new WindData { Time = "21h", Max = 10.8, Avg = 5.3, Min = 4.3, Direction = 11 },
-        new WindData { Time = "22h", Max = 15, Avg = 12.7, Min = 9, Direction = 54 }
-    };
+        _windData = windService.GetWindData()
+        .Select(wind => new WindDataPoint(
+            timestamp: wind.Timestamp,
+            minSpeed: wind.MinSpeed,
+            avgSpeed: wind.AvgSpeed,
+            maxSpeed: wind.MaxSpeed,
+            direction: wind.Direction))
+            .ToList();
+    }
 }

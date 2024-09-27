@@ -1,9 +1,11 @@
 ﻿@page "/humidity"
+@using WindStations.WebUI.Components.ChartDataPointModels
+@inject WindStations.Core.Interfaces.IEnvironmentService environmentService
 
 <h3>Humidity</h3>
 
 <div style="height: 450px">
-    @if (humidities == null)
+    @if (_humidityData is null)
     {
         <SfSkeleton Width="100%" Height="100%" Effect="ShimmerEffect.Wave"></SfSkeleton>
     }
@@ -14,7 +16,12 @@
                 <ChartAreaBorder Width="0"></ChartAreaBorder>
             </ChartArea>
 
-            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category" LabelPlacement="LabelPlacement.OnTicks" EdgeLabelPlacement="EdgeLabelPlacement.Shift" PlotOffset="10">
+            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime"
+                               Format="HH:mm:ss"
+                               LabelFormat="HH:mm"
+                               LabelPlacement="LabelPlacement.OnTicks"
+                               EdgeLabelPlacement="EdgeLabelPlacement.Shift"
+                               PlotOffset="10">
                 <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
                 <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
             </ChartPrimaryXAxis>
@@ -27,12 +34,16 @@
             <ChartTooltipSettings Enable="true" Header="${point.x}" Format="${point.y}"></ChartTooltipSettings>
 
             <ChartSeriesCollection>
-                <ChartSeries DataSource="@humidities" XName="Time" YName="Humidity" Fill="url(#humidity-gradient)" Type="ChartSeriesType.Area">
+                <ChartSeries DataSource="@_humidityData"
+                             XName="Timestamp"
+                             YName="Value"
+                             Fill="url(#humidity-gradient)"
+                             Type="ChartSeriesType.Area">
                     <ChartSeriesBorder Width="2" Color="#00810a"></ChartSeriesBorder>
                     <ChartMarker>
                         <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Top">
                             <Template>
-                                <div>@Math.Round(Convert.ToDouble(context.PointY))</div>
+                                <div>@Math.Round(Convert.ToDouble(context.PointY), 1)</div>
                             </Template>
                         </ChartDataLabel>
                     </ChartMarker>
@@ -52,25 +63,12 @@
 </div>
 
 @code {
-    private class Environment
-    {
-        public string Time { get; set; }
-        public double Humidity { get; set; }
-    }
+    private List<EnvironmentDataPoint>? _humidityData;
 
-    private List<Environment> humidities = new List<Environment>
+    protected override void OnInitialized()
     {
-        new Environment { Time = "11h", Humidity = 40.3 },
-        new Environment { Time = "12h", Humidity = 33.4 },
-        new Environment { Time = "13h", Humidity = 38.3 },
-        new Environment { Time = "14h", Humidity = 36.7 },
-        new Environment { Time = "15h", Humidity = 35.1 },
-        new Environment { Time = "16h", Humidity = 34.2 },
-        new Environment { Time = "17h", Humidity = 39.7 },
-        new Environment { Time = "18h", Humidity = 38.7 },
-        new Environment { Time = "19h", Humidity = 42.5 },
-        new Environment { Time = "20h", Humidity = 50.22 },
-        new Environment { Time = "21h", Humidity = 49.3 },
-        new Environment { Time = "22h", Humidity = 48.5 }
-    };
+        _humidityData = environmentService.GetHumidityData()
+        .Select(humidity => new EnvironmentDataPoint(timestamp: humidity.Timestamp, value: humidity.Value))
+        .ToList();
+    }
 }

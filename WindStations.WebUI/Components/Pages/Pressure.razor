@@ -1,9 +1,11 @@
 ﻿@page "/pressure"
+@using WindStations.WebUI.Components.ChartDataPointModels
+@inject WindStations.Core.Interfaces.IEnvironmentService environmentService
 
 <h3>Pressure</h3>
 
 <div style="height: 450px">
-    @if (pressures == null)
+    @if (_pressureData is null)
     {
         <SfSkeleton Width="100%" Height="100%" Effect="ShimmerEffect.Wave"></SfSkeleton>
     }
@@ -14,7 +16,12 @@
                 <ChartAreaBorder Width="0"></ChartAreaBorder>
             </ChartArea>
 
-            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category" LabelPlacement="LabelPlacement.OnTicks" EdgeLabelPlacement="EdgeLabelPlacement.Shift" PlotOffset="10">
+            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime"
+                               Format="HH:mm:ss"
+                               LabelFormat="HH:mm"
+                               LabelPlacement="LabelPlacement.OnTicks"
+                               EdgeLabelPlacement="EdgeLabelPlacement.Shift"
+                               PlotOffset="10">
                 <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
                 <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
             </ChartPrimaryXAxis>
@@ -27,12 +34,16 @@
             <ChartTooltipSettings Enable="true" Header="${point.x}" Format="${point.y}"></ChartTooltipSettings>
 
             <ChartSeriesCollection>
-                <ChartSeries DataSource="@pressures" XName="Time" YName="Pressure" Fill="url(#pressure-gradient)" Type="ChartSeriesType.Area">
+                <ChartSeries DataSource="@_pressureData"
+                             XName="Timestamp"
+                             YName="Value"
+                             Fill="url(#pressure-gradient)"
+                             Type="ChartSeriesType.Area">
                     <ChartSeriesBorder Width="2" Color="#0024db"></ChartSeriesBorder>
                     <ChartMarker>
                         <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Top">
                             <Template>
-                                <div>@Math.Round(Convert.ToDouble(context.PointY))</div>
+                                <div>@Math.Round(Convert.ToDouble(context.PointY), 1)</div>
                             </Template>
                         </ChartDataLabel>
                     </ChartMarker>
@@ -52,25 +63,12 @@
 </div>
 
 @code {
-    private class Environment
-    {
-        public string Time { get; set; }
-        public double Pressure { get; set; }
-    }
+    private List<EnvironmentDataPoint>? _pressureData;
 
-    private List<Environment> pressures = new List<Environment>
+    protected override void OnInitialized()
     {
-        new Environment { Time = "11h", Pressure = 1013.3 },
-        new Environment { Time = "12h", Pressure = 1010.23 },
-        new Environment { Time = "13h", Pressure = 1015.5 },
-        new Environment { Time = "14h", Pressure = 1008.7 },
-        new Environment { Time = "15h", Pressure = 1012.4 },
-        new Environment { Time = "16h", Pressure = 1009.6 },
-        new Environment { Time = "17h", Pressure = 1009.8 },
-        new Environment { Time = "18h", Pressure = 1011.8 },
-        new Environment { Time = "19h", Pressure = 1012.6 },
-        new Environment { Time = "20h", Pressure = 1010.3 },
-        new Environment { Time = "21h", Pressure = 1013.4 },
-        new Environment { Time = "22h", Pressure = 1013.2 }
-    };
+        _pressureData = environmentService.GetPressureData()
+        .Select(pressure => new EnvironmentDataPoint(timestamp: pressure.Timestamp, value: pressure.Value))
+        .ToList();
+    }
 }
