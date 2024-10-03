@@ -1,10 +1,12 @@
-﻿namespace WindStations.Core.Interfaces;
+﻿using WindStations.Core.DTOs;
+
+namespace WindStations.Core.Interfaces;
 public interface IEnvironmentService
 {
-    public List<(DateTime Timestamp, float Value)> GetTemperatureData();
+    public Task<List<RecordDTO>> GetTemperatureDataAsync();
     public Task<float> GetLatestTemperatureAsync();
-    public List<(DateTime Timestamp, float Value)> GetHumidityData();
+    public Task<List<RecordDTO>> GetHumidityDataAsync();
     public Task<float> GetLatestHumidityAsync();
-    public List<(DateTime Timestamp, float Value)> GetPressureData();
+    public Task<List<RecordDTO>> GetPressureDataAsync();
     public Task<float> GetLatestPressureAsync();
 }

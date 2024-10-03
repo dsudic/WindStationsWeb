@@ -1,6 +1,10 @@
 ﻿@page "/pressure"
-@using WindStations.WebUI.Components.ChartDataPointModels
+
+@using Microsoft.AspNetCore.SignalR.Client
+@using WindStations.Core.DTOs
 @inject WindStations.Core.Interfaces.IEnvironmentService environmentService
+@inject NavigationManager navigation
+@implements IAsyncDisposable
 
 <h3>Pressure</h3>
 
@@ -63,12 +67,35 @@
 </div>
 
 @code {
-    private List<EnvironmentDataPoint>? _pressureData;
+    private List<RecordDTO>? _pressureData;
+    private HubConnection? _hubConnection;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _pressureData = environmentService.GetPressureData()
-        .Select(pressure => new EnvironmentDataPoint(timestamp: pressure.Timestamp, value: pressure.Value))
-        .ToList();
+        _pressureData = await environmentService.GetPressureDataAsync();
+
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
+        .Build();
+
+        _hubConnection.On<RecordDTO>("ReceiveLatestPressureData", pressure =>
+        {
+            if (_pressureData.Count >= 15)
+            {
+                _pressureData.RemoveAt(_pressureData.Count - 1);
+            }
+            _pressureData.Insert(0, pressure);
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
     }
 }

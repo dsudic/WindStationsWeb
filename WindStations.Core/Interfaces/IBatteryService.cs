@@ -1,5 +1,5 @@
 ﻿namespace WindStations.Core.Interfaces;
 public interface IBatteryService
 {
-    public Task<uint> GetBatteryStatusAsync();
+    public Task<float> GetBatteryVoltageAsync();
 }

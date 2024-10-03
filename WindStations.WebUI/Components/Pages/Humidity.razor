@@ -1,6 +1,10 @@
 ﻿@page "/humidity"
-@using WindStations.WebUI.Components.ChartDataPointModels
+
+@using Microsoft.AspNetCore.SignalR.Client
+@using WindStations.Core.DTOs
 @inject WindStations.Core.Interfaces.IEnvironmentService environmentService
+@inject NavigationManager navigation
+@implements IAsyncDisposable
 
 <h3>Humidity</h3>
 
@@ -63,12 +67,35 @@
 </div>
 
 @code {
-    private List<EnvironmentDataPoint>? _humidityData;
+    private List<RecordDTO>? _humidityData;
+    private HubConnection? _hubConnection;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _humidityData = environmentService.GetHumidityData()
-        .Select(humidity => new EnvironmentDataPoint(timestamp: humidity.Timestamp, value: humidity.Value))
-        .ToList();
+        _humidityData = await environmentService.GetHumidityDataAsync();
+
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
+        .Build();
+
+        _hubConnection.On<RecordDTO>("ReciveLatestHumidityData", humidity =>
+        {
+            if (_humidityData.Count >= 15)
+            {
+                _humidityData.RemoveAt(_humidityData.Count - 1);
+            }
+            _humidityData.Insert(0, humidity);
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
     }
 }

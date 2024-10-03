@@ -1,6 +1,10 @@
 ﻿@page "/temperature"
-@using WindStations.WebUI.Components.ChartDataPointModels
+
+@using Microsoft.AspNetCore.SignalR.Client
+@using WindStations.Core.DTOs
 @inject WindStations.Core.Interfaces.IEnvironmentService environmentService
+@inject NavigationManager navigation
+@implements IAsyncDisposable
 
 <h3>Temperature</h3>
 
@@ -76,12 +80,35 @@
 </div>
 
 @code {
-    private List<EnvironmentDataPoint>? _temperatureData;
+    private List<RecordDTO>? _temperatureData;
+    private HubConnection? _hubConnection;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _temperatureData = environmentService.GetTemperatureData()
-        .Select(temperature => new EnvironmentDataPoint(timestamp: temperature.Timestamp, value: temperature.Value))
-        .ToList();
+        _temperatureData = await environmentService.GetTemperatureDataAsync();
+
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
+        .Build();
+
+        _hubConnection.On<RecordDTO>("ReceiveLatestTemperatureData", temperature =>
+        {
+            if (_temperatureData.Count >= 15)
+            {
+                _temperatureData.RemoveAt(_temperatureData.Count - 1);
+            }
+            _temperatureData.Insert(0, temperature);
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
     }
 }

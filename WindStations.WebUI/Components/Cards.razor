@@ -1,6 +1,10 @@
-﻿@inject WindStations.WebUI.Services.GradientService gradientService
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using WindStations.Core.DTOs
+@inject WindStations.WebUI.Services.GradientService gradientService
 @inject WindStations.Core.Interfaces.IWindService windService
 @inject WindStations.Core.Interfaces.IEnvironmentService environmentService
+@inject NavigationManager navigation
+@implements IAsyncDisposable
 
 <div class="cards-container">
     <NavLink href="wind" class="col-6 col-lg-3 nav-card">
@@ -9,7 +13,7 @@
             <div id="wind" class="e-card @_isWindSelected @((_currentWindSpeed < gradientService.WindGradients[0].Max) ? "low" : "")"
                  style="--wind-color: @gradientService.GetRangeColor(_currentWindSpeed)" @onclick="windClick">
                 <div style="display: flex; justify-content: flex-start">
-                    <h3>@_currentWindSpeed kts</h3>
+                    <h3>@Math.Round(_currentWindSpeed) kts</h3>
                     @* <img id="wind-direction" src="images/arrow.png" alt="Direction" style="transform: rotate(@(direction)deg)" /> *@
                     <svg id="wind-direction" version="1.0" xmlns="http://www.w3.org/2000/svg"
                          viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet" style="transform: rotate(@(_currentWindDirection)deg)">
@@ -70,7 +74,7 @@
         @if (_isDataReady)
         {
             <div id="temperature" class="e-card @_isTemperatureSelected" style="--temperature-color: #e56c30" @onclick="temperatureClick">
-                <h3>@(_currentTemperature) °C</h3>
+                <h3>@Math.Round(_currentTemperature) °C</h3>
                 <div>
                     <span>Temperature</span>
                     @* <img src="images/temperature.png" alt="Temperature" class="card-icon" /> *@
@@ -119,7 +123,7 @@
         @if (_isDataReady)
         {
             <div id="humidity" class="e-card @_isHumiditySelected" style="--humidity-color: #308136" @onclick="humidityClick">
-                <h3>@(_currentHumidity)%</h3>
+                <h3>@(Math.Round(_currentHumidity))%</h3>
                 <div>
                     <span>Humidity</span>
                     @* <img src="images/humidity.png" alt="Humidity" class="card-icon" /> *@
@@ -163,7 +167,7 @@
         @if (_isDataReady)
         {
             <div id="pressure" class="e-card @_isPressureSelected" style="--pressure-color: #2140dc" @onclick="pressureClick">
-                <h3>@(_currentPressure) hPa</h3>
+                <h3>@Math.Round(_currentPressure) hPa</h3>
                 <div>
                     <span>Pressure</span>
                     @* <img src="images/pressure.png" width="50" alt="Pressure" class="card-icon" /> *@
@@ -223,23 +227,55 @@
 @code {
     private float _currentWindDirection;
     private float _currentWindSpeed;
-    private short _currentTemperature;
-    private byte _currentHumidity;
-    private ushort _currentPressure;
+    private float _currentTemperature;
+    private float _currentHumidity;
+    private float _currentPressure;
     private string _isWindSelected = "selected";
     private string _isTemperatureSelected = "";
     private string _isHumiditySelected = "";
     private string _isPressureSelected = "";
     private bool _isDataReady = false;
+    private HubConnection? _hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
         _currentWindDirection = await windService.GetLatestDirectionAsync();
-        _currentWindSpeed = (float)Math.Round(await windService.GetLatestAvgSpeedAsync());
-        _currentTemperature = (short)Math.Round(await environmentService.GetLatestTemperatureAsync());
-        _currentHumidity = (byte)Math.Round(await environmentService.GetLatestHumidityAsync());
-        _currentPressure = (ushort)Math.Round(await environmentService.GetLatestPressureAsync());
+        _currentWindSpeed = await windService.GetLatestAvgSpeedAsync();
+        _currentTemperature = await environmentService.GetLatestTemperatureAsync();
+        _currentHumidity = await environmentService.GetLatestHumidityAsync();
+        _currentPressure = await environmentService.GetLatestPressureAsync();
         _isDataReady = true;
+
+        _hubConnection = new HubConnectionBuilder()
+       .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
+       .Build();
+
+        _hubConnection.On<WindDTO>("ReceiveLatestWindData", wind =>
+        {
+            _currentWindSpeed = wind.AvgSpeed;
+            _currentWindDirection = wind.Direction;
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On<RecordDTO>("ReceiveLatestTemperatureData", temperature =>
+        {
+            _currentTemperature = temperature.Value;
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On<RecordDTO>("ReceiveLatestHumidityData", humidity =>
+        {
+            _currentHumidity = humidity.Value;
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On<RecordDTO>("ReceiveLatestPressureData", pressure =>
+        {
+            _currentPressure = pressure.Value;
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
     }
 
     private void windClick()
@@ -272,5 +308,13 @@
         _isTemperatureSelected = "";
         _isHumiditySelected = "";
         _isPressureSelected = "selected";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
     }
 }

@@ -5,6 +5,7 @@ using WindStations.Infrastructure.Services;
 using WindStations.WebUI.Components;
 using Syncfusion.Blazor;
 using WindStations.WebUI.Services;
+using WindStations.Infrastructure.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,8 @@ builder.Services.AddTransient<IWindService, WindService>();
 builder.Services.AddTransient<IEnvironmentService, EnvironmentService>();
 builder.Services.AddTransient<IBatteryService, BatteryService>();
 builder.Services.AddSingleton<GradientService>();
+builder.Services.AddTransient<DataUpdateService>();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -46,5 +49,7 @@ app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapHub<DataUpdatesHub>("/dataUpdates");
 
 app.Run();

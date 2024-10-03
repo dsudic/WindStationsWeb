@@ -1,7 +1,9 @@
-﻿namespace WindStations.Core.Interfaces;
+﻿using WindStations.Core.DTOs;
+
+namespace WindStations.Core.Interfaces;
 public interface IWindService
 {
-    public List<(DateTime Timestamp, float MinSpeed, float AvgSpeed, float MaxSpeed, float Direction)> GetWindData();
+    public List<WindDTO> GetWindData();
     public Task<float> GetLatestDirectionAsync();
     public Task<float> GetLatestAvgSpeedAsync();
 }

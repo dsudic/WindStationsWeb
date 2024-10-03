@@ -1,9 +1,13 @@
 ﻿@page "/"
 @page "/wind"
+
 @using System.Drawing
-@using WindStations.WebUI.Components.ChartDataPointModels
+@using Microsoft.AspNetCore.SignalR.Client
+@using WindStations.Core.DTOs
 @inject WindStations.Core.Interfaces.IWindService windService
 @inject WindStations.WebUI.Services.GradientService gradientService
+@inject NavigationManager navigation
+@implements IAsyncDisposable
 
 <h3>Wind</h3>
 
@@ -148,17 +152,34 @@
 </div>
 
 @code {
-    private List<WindDataPoint>? _windData;
+    private List<WindDTO>? _windData;
+    private HubConnection? _hubConnection;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _windData = windService.GetWindData()
-        .Select(wind => new WindDataPoint(
-            timestamp: wind.Timestamp,
-            minSpeed: wind.MinSpeed,
-            avgSpeed: wind.AvgSpeed,
-            maxSpeed: wind.MaxSpeed,
-            direction: wind.Direction))
-            .ToList();
+        _windData = windService.GetWindData();
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
+        .Build();
+
+        _hubConnection.On<WindDTO>("ReceiveLatestWindData", wind =>
+        {
+            if (_windData.Count >= 15)
+            {
+                _windData.RemoveAt(_windData.Count - 1);
+            }
+            _windData.Insert(0, wind);
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
     }
 }

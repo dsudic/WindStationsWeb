@@ -1,21 +1,25 @@
 ﻿@inherits LayoutComponentBase
 @using Syncfusion.Blazor.Navigations
+@using Microsoft.AspNetCore.SignalR.Client
+@using WindStations.Core.DTOs
 @inject WindStations.Core.Interfaces.IBatteryService batteryService
 @inject WindStations.Core.Interfaces.IMessagePersistenceService messageService
+@inject NavigationManager navigation
+@implements IAsyncDisposable
 
 <div class="main-container">
     <SfAppBar CssClass="custom-appbar">
         <img src="images/windsock.png" width="30" alt="Wind sock" style="margin: 0px 10px" />
         <div style="font-size:22px; font-weight:600">
             WindStation Omiš
-            <i id="@_status" class="bi bi-circle-fill" style="margin-left: 10px"></i>
+            <i id="@GetConnectionStatus()" class="bi bi-circle-fill" style="margin-left: 10px"></i>
         </div>
 
         <AppBarSpacer></AppBarSpacer>
 
         <img src="images/battery.png" width="26" alt="Battery" />
         <div style="margin-right: 5px; font-size: 18px">
-            @(_batteryStatus)%
+            @(GetBatteryStatus())%
         </div>
     </SfAppBar>
 
@@ -33,17 +37,49 @@
 </div>
 
 @code {
-    private string _status = "offline";
-    private uint _batteryStatus;
+    private float _currentBatteryVoltage;
+    private DateTime _latestTimestamp;
+    private HubConnection? _hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
-        _batteryStatus = await batteryService.GetBatteryStatusAsync();
+        _currentBatteryVoltage = await batteryService.GetBatteryVoltageAsync();
+        _latestTimestamp = await messageService.GetLatestTimestampAsync();
 
-        TimeSpan timeDiff = DateTime.Now - await messageService.GetLatestTimestampAsync();
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
+        .Build();
 
-        const byte inactivityPeriod = 4;
+        _hubConnection.On<DateTime, float>("ReceiveLatestStatusData", (timestamp, batteryVoltage) =>
+        {
+            _currentBatteryVoltage = batteryVoltage;
+            _latestTimestamp = timestamp;
 
-        _status = (timeDiff.TotalMinutes > inactivityPeriod) ? "offline" : "online";
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    private string GetConnectionStatus()
+    {
+        TimeSpan timeDiff = DateTime.Now - _latestTimestamp;
+
+        const byte InactivityPeriod = 4;
+        return (timeDiff.TotalMinutes > InactivityPeriod) ? "offline" : "online";
+    }
+
+    private uint GetBatteryStatus()
+    {
+        const float BatteryVoltageMax = 4.2F;
+        return (uint)Math.Round(_currentBatteryVoltage / BatteryVoltageMax * 100);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
     }
 }

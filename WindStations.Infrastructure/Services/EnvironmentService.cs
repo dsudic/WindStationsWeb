@@ -1,55 +1,59 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using WindStations.Core.DTOs;
 using WindStations.Core.Interfaces;
 using WindStations.Infrastructure.Data;
 
 namespace WindStations.Infrastructure.Services;
 public class EnvironmentService(WindStationDbContext dbContext) : IEnvironmentService
 {
-    public List<(DateTime Timestamp, float Value)> GetTemperatureData()
+    public async Task<List<RecordDTO>> GetTemperatureDataAsync()
     {
-        return dbContext.Environment
+        return await dbContext.Environment
             .OrderByDescending(e => e.TimeStamp)
-            .Select(env => new { env.TimeStamp, env.Temperature })
+            .Select(env => new RecordDTO(env.TimeStamp, env.Temperature))
             .Take(15)
-            .AsEnumerable()
-            .Select(env => (env.TimeStamp, env.Temperature))
-            .ToList();
+            .ToListAsync();
     }
 
     public async Task<float> GetLatestTemperatureAsync()
     {
-        return await dbContext.Environment.OrderByDescending(env => env.TimeStamp).Select(env => env.Temperature).FirstAsync();
+        return await dbContext.Environment
+            .OrderByDescending(env => env.TimeStamp)
+            .Select(env => env.Temperature)
+            .FirstAsync();
     }
 
-    public List<(DateTime Timestamp, float Value)> GetHumidityData()
+    public async Task<List<RecordDTO>> GetHumidityDataAsync()
     {
-        return dbContext.Environment
+        return await dbContext.Environment
             .OrderByDescending(e => e.TimeStamp)
-            .Select(env => new { env.TimeStamp, env.Humidity })
+            .Select(env => new RecordDTO(env.TimeStamp, env.Humidity))
             .Take(15)
-            .AsEnumerable()
-            .Select(env => (env.TimeStamp, env.Humidity))
-            .ToList();
+            .ToListAsync();
     }
 
     public async Task<float> GetLatestHumidityAsync()
     {
-        return await dbContext.Environment.OrderByDescending(env => env.TimeStamp).Select(env => env.Humidity).FirstAsync();
+        return await dbContext.Environment
+            .OrderByDescending(env => env.TimeStamp)
+            .Select(env => env.Humidity)
+            .FirstAsync();
     }
 
-    public List<(DateTime Timestamp, float Value)> GetPressureData()
+    public async Task<List<RecordDTO>> GetPressureDataAsync()
     {
-        return dbContext.Environment
+        return await dbContext.Environment
             .OrderByDescending(e => e.TimeStamp)
-            .Select(env => new { env.TimeStamp, env.Pressure })
+            .Select(env => new RecordDTO(env.TimeStamp, env.Pressure))
             .Take(15)
-            .AsEnumerable()
-            .Select(env => (env.TimeStamp, env.Pressure))
-            .ToList();
+            .ToListAsync();
     }
 
     public async Task<float> GetLatestPressureAsync()
     {
-        return await dbContext.Environment.OrderByDescending(env => env.TimeStamp).Select(env => env.Pressure).FirstAsync();
+        return await dbContext.Environment
+            .OrderByDescending(env => env.TimeStamp)
+            .Select(env => env.Pressure)
+            .FirstAsync();
     }
 }
