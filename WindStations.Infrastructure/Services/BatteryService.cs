@@ -8,7 +8,7 @@ public class BatteryService(WindStationDbContext dbContext) : IBatteryService
     public async Task<float> GetBatteryVoltageAsync()
     {
         return await dbContext.Battery
-            .OrderByDescending(b => b.TimeStamp)
+            .OrderByDescending(b => b.Timestamp)
             .Select(b => b.Voltage)
             .FirstAsync();
     }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WindStations.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using WindStations.Infrastructure.Data;
 namespace WindStations.Infrastructure.Migrations
 {
     [DbContext(typeof(WindStationDbContext))]
-    partial class WindStationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241005103156_CombineAnemometerAndVane")]
+    partial class CombineAnemometerAndVane
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

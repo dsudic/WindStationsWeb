@@ -157,7 +157,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _windData = windService.GetWindData();
+        _windData = await windService.GetWindDataAsync();
         _hubConnection = new HubConnectionBuilder()
         .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
         .Build();

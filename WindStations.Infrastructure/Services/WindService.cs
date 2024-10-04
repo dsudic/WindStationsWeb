@@ -6,40 +6,28 @@ using WindStations.Infrastructure.Data;
 namespace WindStations.Infrastructure.Services;
 public class WindService(WindStationDbContext dbContext) : IWindService
 {
-    public List<WindDTO> GetWindData()
+    public async Task<List<WindDTO>> GetWindDataAsync()
     {
-        var anemometer = dbContext.Anemometer
-            .OrderByDescending(a => a.TimeStamp)
-            .Select(a => new { a.TimeStamp, a.MinSpeed, a.AvgSpeed, a.MaxSpeed })
+        return await dbContext.Wind
+            .OrderByDescending(wind => wind.Timestamp)
+            .Select(wind => new WindDTO(wind.Timestamp, wind.MinSpeed, wind.AvgSpeed, wind.MaxSpeed, wind.Direction))
             .Take(15)
-            .AsEnumerable()
-            .Select(a => (a.TimeStamp, a.MinSpeed, a.AvgSpeed, a.MaxSpeed))
-            .ToList();
-
-        var vane = dbContext.Vane.Select(v => v.AvgDirection).ToList();
-
-        return anemometer.Zip(vane, (wind, direction) => new WindDTO(
-            timestamp: wind.TimeStamp,
-            minSpeed: wind.MinSpeed,
-            avgSpeed: wind.AvgSpeed,
-            maxSpeed: wind.MaxSpeed,
-            direction: direction))
-            .ToList();
+            .ToListAsync();
     }
 
     public async Task<float> GetLatestDirectionAsync()
     {
-        return await dbContext.Vane
-            .OrderByDescending(v => v.TimeStamp)
-            .Select(v => v.AvgDirection)
+        return await dbContext.Wind
+            .OrderByDescending(wind => wind.Timestamp)
+            .Select(wind => wind.Direction)
             .FirstAsync();
     }
 
     public async Task<float> GetLatestAvgSpeedAsync()
     {
-        return await dbContext.Anemometer
-            .OrderByDescending(a => a.TimeStamp)
-            .Select(a => a.AvgSpeed)
+        return await dbContext.Wind
+            .OrderByDescending(wind => wind.Timestamp)
+            .Select(wind => wind.AvgSpeed)
             .FirstAsync();
     }
 }

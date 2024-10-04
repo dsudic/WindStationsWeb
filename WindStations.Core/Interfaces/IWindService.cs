@@ -3,7 +3,7 @@
 namespace WindStations.Core.Interfaces;
 public interface IWindService
 {
-    public List<WindDTO> GetWindData();
+    public Task<List<WindDTO>> GetWindDataAsync();
     public Task<float> GetLatestDirectionAsync();
     public Task<float> GetLatestAvgSpeedAsync();
 }

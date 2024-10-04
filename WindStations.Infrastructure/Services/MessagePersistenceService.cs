@@ -13,24 +13,21 @@ public class MessagePersistenceService(WindStationDbContext dbContext, DataUpdat
         {
             var stationId = MessageParser.ParseStationId(reader);
 
-            var anemometer = MessageParser.ParseAnemometer(reader);
-            dbContext.Anemometer.Add(anemometer);
-
-            var vane = MessageParser.ParseVane(reader);
-            dbContext.Vane.Add(vane);
+            var wind = MessageParser.ParseWind(reader);
+            dbContext.Wind.Add(wind);
 
             await updateService.SendLatestWindData(new WindDTO(
-                timestamp: anemometer.TimeStamp,
-                minSpeed: anemometer.MinSpeed,
-                avgSpeed: anemometer.AvgSpeed,
-                maxSpeed: anemometer.MaxSpeed,
-                direction: vane.AvgDirection));
+                timestamp: wind.Timestamp,
+                minSpeed: wind.MinSpeed,
+                avgSpeed: wind.AvgSpeed,
+                maxSpeed: wind.MaxSpeed,
+                direction: wind.Direction));
 
             var environment = MessageParser.ParseEnvironment(reader);
             dbContext.Environment.Add(environment);
 
             await updateService.SendLatestEnvironmentData(new EnvironmentDTO(
-                timestamp: environment.TimeStamp,
+                timestamp: environment.Timestamp,
                 temperature: environment.Temperature,
                 humidity: environment.Humidity,
                 pressure: environment.Pressure));
@@ -38,7 +35,7 @@ public class MessagePersistenceService(WindStationDbContext dbContext, DataUpdat
             var battery = MessageParser.ParseBattery(reader);
             dbContext.Battery.Add(battery);
 
-            await updateService.SendLatestStatusData(battery.TimeStamp, battery.Voltage);
+            await updateService.SendLatestStatusData(battery.Timestamp, battery.Voltage);
         }
 
         await dbContext.SaveChangesAsync();
@@ -46,9 +43,9 @@ public class MessagePersistenceService(WindStationDbContext dbContext, DataUpdat
 
     public async Task<DateTime> GetLatestTimestampAsync()
     {
-        return await dbContext.Anemometer
-            .OrderByDescending(a => a.TimeStamp)
-            .Select(a => a.TimeStamp)
+        return await dbContext.Wind
+            .OrderByDescending(wind => wind.Timestamp)
+            .Select(wind => wind.Timestamp)
             .FirstAsync();
     }
 }
