@@ -12,14 +12,14 @@
         <img src="images/windsock.png" width="30" alt="Wind sock" style="margin: 0px 10px" />
         <div style="font-size:22px; font-weight:600">
             WindStation Omiš
-            <i id="@GetConnectionStatus()" class="bi bi-circle-fill" style="margin-left: 10px"></i>
+            <i id="@(_isOnline ? "online" : "offline")" class="bi bi-circle-fill" style="margin-left: 10px"></i>
         </div>
 
         <AppBarSpacer></AppBarSpacer>
 
         <img src="images/battery.png" width="26" alt="Battery" />
         <div style="margin-right: 5px; font-size: 18px">
-            @(GetBatteryStatus())%
+            @(_batteryStatus.HasValue ? _batteryStatus : "NaN")%
         </div>
     </SfAppBar>
 
@@ -37,14 +37,17 @@
 </div>
 
 @code {
-    private float _currentBatteryVoltage;
-    private DateTime _latestTimestamp;
+    private uint? _batteryStatus;
+    private bool _isOnline = false;
     private HubConnection? _hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
-        _currentBatteryVoltage = await batteryService.GetBatteryVoltageAsync();
-        _latestTimestamp = await messageService.GetLatestTimestampAsync();
+        var currentBatteryVoltage = await batteryService.GetBatteryVoltageAsync();
+        GetBatteryStatus(currentBatteryVoltage);
+
+        var latestTimestamp = await messageService.GetLatestTimestampAsync();
+        GetConnectionStatus(latestTimestamp);
 
         _hubConnection = new HubConnectionBuilder()
         .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
@@ -52,8 +55,8 @@
 
         _hubConnection.On<DateTime, float>("ReceiveLatestStatusData", (timestamp, batteryVoltage) =>
         {
-            _currentBatteryVoltage = batteryVoltage;
-            _latestTimestamp = timestamp;
+            GetConnectionStatus(timestamp);
+            GetBatteryStatus(batteryVoltage);
 
             InvokeAsync(StateHasChanged);
         });
@@ -61,18 +64,26 @@
         await _hubConnection.StartAsync();
     }
 
-    private string GetConnectionStatus()
+    private void GetConnectionStatus(DateTime latestTimestamp)
     {
-        TimeSpan timeDiff = DateTime.Now - _latestTimestamp;
+        TimeSpan timeDiff = DateTime.Now - latestTimestamp;
 
         const byte InactivityPeriod = 4;
-        return (timeDiff.TotalMinutes > InactivityPeriod) ? "offline" : "online";
+        _isOnline = timeDiff.TotalMinutes < InactivityPeriod;
     }
 
-    private uint GetBatteryStatus()
+    private void GetBatteryStatus(float? currentBatteryVoltage)
     {
         const float BatteryVoltageMax = 4.2F;
-        return (uint)Math.Round(_currentBatteryVoltage / BatteryVoltageMax * 100);
+
+        if (currentBatteryVoltage.HasValue)
+        {
+            _batteryStatus = (uint)Math.Round(currentBatteryVoltage.Value / BatteryVoltageMax * 100);
+        }
+        else
+        {
+            _batteryStatus = null;
+        }
     }
 
     public async ValueTask DisposeAsync()

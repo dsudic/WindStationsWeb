@@ -46,6 +46,6 @@ public class MessagePersistenceService(WindStationDbContext dbContext, DataUpdat
         return await dbContext.Wind
             .OrderByDescending(wind => wind.Timestamp)
             .Select(wind => wind.Timestamp)
-            .FirstAsync();
+            .FirstOrDefaultAsync();
     }
 }

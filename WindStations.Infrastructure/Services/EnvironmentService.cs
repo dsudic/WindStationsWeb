@@ -15,12 +15,12 @@ public class EnvironmentService(WindStationDbContext dbContext) : IEnvironmentSe
             .ToListAsync();
     }
 
-    public async Task<float> GetLatestTemperatureAsync()
+    public async Task<float?> GetLatestTemperatureAsync()
     {
         return await dbContext.Environment
             .OrderByDescending(env => env.Timestamp)
-            .Select(env => env.Temperature)
-            .FirstAsync();
+            .Select(env => (float?)env.Temperature)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<List<RecordDTO>> GetHumidityDataAsync()
@@ -32,12 +32,12 @@ public class EnvironmentService(WindStationDbContext dbContext) : IEnvironmentSe
             .ToListAsync();
     }
 
-    public async Task<float> GetLatestHumidityAsync()
+    public async Task<float?> GetLatestHumidityAsync()
     {
         return await dbContext.Environment
             .OrderByDescending(env => env.Timestamp)
-            .Select(env => env.Humidity)
-            .FirstAsync();
+            .Select(env => (float?)env.Humidity)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<List<RecordDTO>> GetPressureDataAsync()
@@ -49,11 +49,11 @@ public class EnvironmentService(WindStationDbContext dbContext) : IEnvironmentSe
             .ToListAsync();
     }
 
-    public async Task<float> GetLatestPressureAsync()
+    public async Task<float?> GetLatestPressureAsync()
     {
         return await dbContext.Environment
             .OrderByDescending(env => env.Timestamp)
-            .Select(env => env.Pressure)
-            .FirstAsync();
+            .Select(env => (float?)env.Pressure)
+            .FirstOrDefaultAsync();
     }
 }

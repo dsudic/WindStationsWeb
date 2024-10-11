@@ -37,56 +37,61 @@
                 <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
                 <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
 
-                <ChartStriplines>
-                    <ChartStripline Start=@_windData.Max(w => w.MaxSpeed)
-                                    SizeType="SizeType.Pixel"
-                                    DashArray="3,3"
-                                    Size="1"
-                                    Color="#D93237"
-                                    Text="Max"
-                                    HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End"
-                                    VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.End">
-                        <ChartStriplineTextStyle Color="#D93237" Size="14px" FontWeight="500" FontFamily="Roboto"></ChartStriplineTextStyle>
-                    </ChartStripline>
-                </ChartStriplines>
-
+                @if (_windData.Count != 0)
+                {
+                    <ChartStriplines>
+                        <ChartStripline Start=@_windData.Max(w => w.MaxSpeed)
+                                        SizeType="SizeType.Pixel"
+                                        DashArray="3,3"
+                                        Size="1"
+                                        Color="#D93237"
+                                        Text="Max"
+                                        HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End"
+                                        VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.End">
+                            <ChartStriplineTextStyle Color="#D93237" Size="14px" FontWeight="500" FontFamily="Roboto"></ChartStriplineTextStyle>
+                        </ChartStripline>
+                    </ChartStriplines>
+                }
             </ChartPrimaryYAxis>
 
-            <ChartTooltipSettings Enable="true" Shared="true">
-                <Template>
-                    @{
-                        var data = context as List<ChartTooltipInfo>;
+            @if (_windData.Count != 0)
+            {
+                <ChartTooltipSettings Enable="true" Shared="true">
+                    <Template>
+                        @{
+                            var data = context as List<ChartTooltipInfo>;
 
-                        <div class="tooltip-table">
-                            <table style="border-radius: 3px; background-color: rgba(0,0,0,0.6); color: white">
-                                <tr style="border-bottom: 1px solid gray">
-                                    <th colspan="3">
-                                        @data[0].X
-                                    </th>
-                                </tr>
-                                <tr>
-                                    <td>Max:</td>
-                                    <td>@data[0].Y</td>
-                                </tr>
-                                <tr>
-                                    <td>Avg:</td>
-                                    <td>
-                                        @data[1].Y
-                                    </td>
-                                    <td>
-                                        <img src="images/arrow.png" alt="Arrow" height="13" width="8"
-                                             style="transform: rotate(@(_windData[(int)data[0].PointIndex].Direction)deg); margin: auto 10px; filter: invert(100%)" />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Min:</td>
-                                    <td>@data[2].Y</td>
-                                </tr>
-                            </table>
-                        </div>
-                    }
-                </Template>
-            </ChartTooltipSettings>
+                            <div class="tooltip-table">
+                                <table style="border-radius: 3px; background-color: rgba(0,0,0,0.6); color: white">
+                                    <tr style="border-bottom: 1px solid gray">
+                                        <th colspan="3">
+                                            @data[0].X
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <td>Max:</td>
+                                        <td>@data[0].Y</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Avg:</td>
+                                        <td>
+                                            @data[1].Y
+                                        </td>
+                                        <td>
+                                            <img src="images/arrow.png" alt="Arrow" height="13" width="8"
+                                                 style="transform: rotate(@(_windData[(int)data[0].PointIndex].Direction)deg); margin: auto 10px; filter: invert(100%)" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Min:</td>
+                                        <td>@data[2].Y</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        }
+                    </Template>
+                </ChartTooltipSettings>
+            }
 
             <ChartSeriesCollection>
                 <ChartSeries DataSource="@_windData"
@@ -144,7 +149,7 @@
         <svg style="height: 0">
             <defs>
                 <linearGradient id="wind-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
-                    @((MarkupString)gradientService.GetGradientStops(_windData.Max(m => m.MaxSpeed)))
+                    @((MarkupString)gradientService.GetGradientStops(_windData.DefaultIfEmpty().Max(m => m?.MaxSpeed ?? default)))
                 </linearGradient>
             </defs>
         </svg>
@@ -158,6 +163,7 @@
     protected override async Task OnInitializedAsync()
     {
         _windData = await windService.GetWindDataAsync();
+
         _hubConnection = new HubConnectionBuilder()
         .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
         .Build();

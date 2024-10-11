@@ -5,5 +5,5 @@ public interface IWindService
 {
     public Task<List<WindDTO>> GetWindDataAsync();
     public Task<float> GetLatestDirectionAsync();
-    public Task<float> GetLatestAvgSpeedAsync();
+    public Task<float?> GetLatestAvgSpeedAsync();
 }

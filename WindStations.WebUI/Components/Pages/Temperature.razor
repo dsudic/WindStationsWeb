@@ -34,18 +34,21 @@
                 <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
                 <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
 
-                <ChartStriplines>
-                    <ChartStripline Start=@_temperatureData.Max(temperature => temperature.Value)
-                                    SizeType="SizeType.Pixel"
-                                    DashArray="3,3"
-                                    Size="1"
-                                    Color="#d93237"
-                                    Text="Max"
-                                    HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End"
-                                    VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.End">
-                        <ChartStriplineTextStyle Color="#d93237" Size="14px" FontWeight="500" FontStyle="Roboto"></ChartStriplineTextStyle>
-                    </ChartStripline>
-                </ChartStriplines>
+                @if (_temperatureData.Count != 0)
+                {
+                    <ChartStriplines>
+                        <ChartStripline Start=@_temperatureData.Max(temperature => temperature.Value)
+                                        SizeType="SizeType.Pixel"
+                                        DashArray="3,3"
+                                        Size="1"
+                                        Color="#d93237"
+                                        Text="Max"
+                                        HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End"
+                                        VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.End">
+                            <ChartStriplineTextStyle Color="#d93237" Size="14px" FontWeight="500" FontStyle="Roboto"></ChartStriplineTextStyle>
+                        </ChartStripline>
+                    </ChartStriplines>
+                }
             </ChartPrimaryYAxis>
 
             <ChartTooltipSettings Enable="true" Header="${point.x}" Format="${point.y}"></ChartTooltipSettings>

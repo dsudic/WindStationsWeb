@@ -5,11 +5,11 @@ using WindStations.Infrastructure.Data;
 namespace WindStations.Infrastructure.Services;
 public class BatteryService(WindStationDbContext dbContext) : IBatteryService
 {
-    public async Task<float> GetBatteryVoltageAsync()
+    public async Task<float?> GetBatteryVoltageAsync()
     {
         return await dbContext.Battery
             .OrderByDescending(b => b.Timestamp)
-            .Select(b => b.Voltage)
-            .FirstAsync();
+            .Select(b => (float?)b.Voltage)
+            .FirstOrDefaultAsync();
     }
 }

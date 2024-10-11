@@ -20,14 +20,14 @@ public class WindService(WindStationDbContext dbContext) : IWindService
         return await dbContext.Wind
             .OrderByDescending(wind => wind.Timestamp)
             .Select(wind => wind.Direction)
-            .FirstAsync();
+            .FirstOrDefaultAsync();
     }
 
-    public async Task<float> GetLatestAvgSpeedAsync()
+    public async Task<float?> GetLatestAvgSpeedAsync()
     {
         return await dbContext.Wind
             .OrderByDescending(wind => wind.Timestamp)
-            .Select(wind => wind.AvgSpeed)
-            .FirstAsync();
+            .Select(wind => (float?)wind.AvgSpeed)
+            .FirstOrDefaultAsync();
     }
 }
