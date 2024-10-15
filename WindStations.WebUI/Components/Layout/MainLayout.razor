@@ -37,17 +37,20 @@
 </div>
 
 @code {
+    private const byte _InactivityPeriodMinutes = 4;
     private uint? _batteryStatus;
+    private DateTime _latestTimestamp;
     private bool _isOnline = false;
     private HubConnection? _hubConnection;
+    private PeriodicTimer? _timer;
 
     protected override async Task OnInitializedAsync()
     {
         var currentBatteryVoltage = await batteryService.GetBatteryVoltageAsync();
         GetBatteryStatus(currentBatteryVoltage);
 
-        var latestTimestamp = await messageService.GetLatestTimestampAsync();
-        GetConnectionStatus(latestTimestamp);
+        _latestTimestamp = await messageService.GetLatestTimestampAsync();
+        _ = StartCheckConnectionStatusAsync();
 
         _hubConnection = new HubConnectionBuilder()
         .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
@@ -55,7 +58,8 @@
 
         _hubConnection.On<DateTime, float>("ReceiveLatestStatusData", (timestamp, batteryVoltage) =>
         {
-            GetConnectionStatus(timestamp);
+            _latestTimestamp = timestamp;
+            RestartCheckConnectionStatus();
             GetBatteryStatus(batteryVoltage);
 
             InvokeAsync(StateHasChanged);
@@ -64,12 +68,11 @@
         await _hubConnection.StartAsync();
     }
 
-    private void GetConnectionStatus(DateTime latestTimestamp)
+    private void GetConnectionStatus()
     {
-        TimeSpan timeDiff = DateTime.Now - latestTimestamp;
+        TimeSpan timeDiff = DateTime.Now - _latestTimestamp;
 
-        const byte InactivityPeriod = 4;
-        _isOnline = timeDiff.TotalMinutes < InactivityPeriod;
+        _isOnline = timeDiff.TotalMinutes < _InactivityPeriodMinutes;
     }
 
     private void GetBatteryStatus(float? currentBatteryVoltage)
@@ -86,11 +89,37 @@
         }
     }
 
+    private async Task StartCheckConnectionStatusAsync()
+    {
+        _timer = new PeriodicTimer(TimeSpan.FromMinutes(_InactivityPeriodMinutes));
+
+        do
+        {
+            var isOnline = _isOnline;
+
+            GetConnectionStatus();
+
+            if (isOnline != _isOnline)
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        while (await _timer.WaitForNextTickAsync());
+    }
+
+    private void RestartCheckConnectionStatus()
+    {
+        _timer?.Dispose();
+        _ = StartCheckConnectionStatusAsync();
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_hubConnection is not null)
         {
             await _hubConnection.DisposeAsync();
         }
+
+        _timer?.Dispose();
     }
 }
