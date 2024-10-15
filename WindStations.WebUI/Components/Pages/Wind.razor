@@ -97,8 +97,11 @@
                 <ChartSeries DataSource="@_windData"
                              XName="Timestamp"
                              YName="MaxSpeed"
+                             DashArray="5,5"
                              Fill="url(#wind-gradient)"
-                             Type="ChartSeriesType.SplineArea">
+                             Type="ChartSeriesType.SplineArea"
+                             SplineType="SplineType.Monotonic">
+                    <ChartSeriesBorder Width="0.3" Color="gray"></ChartSeriesBorder>
                     <ChartMarker Visible="false">
                         <ChartDataLabel Visible="true" Name="Direction" Position="Syncfusion.Blazor.Charts.LabelPosition.Top">
                             <Template>
@@ -117,7 +120,8 @@
                              XName="Timestamp"
                              YName="AvgSpeed"
                              Fill="black"
-                             Type="ChartSeriesType.Spline">
+                             Type="ChartSeriesType.Spline"
+                             SplineType="SplineType.Monotonic">
                     <ChartMarker Visible="true" Fill="black" Height="3" Width="3" Shape="ChartShape.Circle">
                         <ChartDataLabel Visible="true" Name="Direction" Position="Syncfusion.Blazor.Charts.LabelPosition.Bottom">
                             <Template>
@@ -140,7 +144,8 @@
                              YName="MinSpeed"
                              Fill="gray"
                              DashArray="5,5"
-                             Type="ChartSeriesType.Spline">
+                             Type="ChartSeriesType.Spline"
+                             SplineType="SplineType.Monotonic">
                 </ChartSeries>
             </ChartSeriesCollection>
 
