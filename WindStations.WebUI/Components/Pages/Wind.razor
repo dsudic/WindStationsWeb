@@ -128,7 +128,7 @@
                                 @{
                                     var data = context as ChartDataPointInfo;
                                     <div style="display:flex;flex-direction:column;align-items:center">
-                                        <div>@Math.Round(Convert.ToDouble(data.Y))</div>
+                                        <div>@Math.Round(Convert.ToDouble(data.Y), 1)</div>
                                         <img id="chart-direction-arrow" src="images/arrow.png" alt="Arrow" style="transform:rotate(@(data.Text)deg)" />
                                     </div>
                                 }

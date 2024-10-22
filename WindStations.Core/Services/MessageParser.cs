@@ -11,11 +11,15 @@ public static class MessageParser
 
     public static Wind ParseWind(BinaryReader reader)
     {
-        const float SpeedConversionFactor = 115 * float.Pi / (1000000 * 100);
+        const uint IntegerDivisionFactor = 1000000;
+        const uint AnemometerFactorDivider = 100;
+        const uint CupsArmDiameterMillimeters = 115;
+        const float MpsToKnots = 1.9438F;
+        const float SpeedConversionFactor = (CupsArmDiameterMillimeters * float.Pi) / (IntegerDivisionFactor * AnemometerFactorDivider);
 
-        var minSpeed = reader.ReadInt32() * SpeedConversionFactor;
-        var avgSpeed = reader.ReadInt32() * SpeedConversionFactor;
-        var maxSpeed = reader.ReadInt32() * SpeedConversionFactor;
+        var minSpeed = reader.ReadInt32() * SpeedConversionFactor * MpsToKnots;
+        var avgSpeed = reader.ReadInt32() * SpeedConversionFactor * MpsToKnots;
+        var maxSpeed = reader.ReadInt32() * SpeedConversionFactor * MpsToKnots;
 
         float xComponentSumRad = 0;
         float yComponentSumRad = 0;
@@ -27,7 +31,8 @@ public static class MessageParser
             yComponentSumRad += (float)Math.Sin(directionSampleRad);
         }
 
-        var avgDirectionDeg = (float)Math.Atan2(yComponentSumRad, xComponentSumRad) * 180 / float.Pi;
+        const int OffsetDeg = 48;
+        var avgDirectionDeg = (float)Math.Atan2(yComponentSumRad, xComponentSumRad) * 180 / float.Pi - OffsetDeg;
 
         // avoid negative angles
         avgDirectionDeg = (avgDirectionDeg < 0) ? avgDirectionDeg + 360 : avgDirectionDeg;
