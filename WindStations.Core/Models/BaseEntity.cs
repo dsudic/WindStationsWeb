@@ -3,5 +3,5 @@
 public abstract class BaseEntity
 {
     public int Id { get; private set; }
-    public DateTime Timestamp { get; private set; } = DateTime.Now;
+    public DateTime Timestamp { get; private set; } = DateTime.UtcNow;
 }

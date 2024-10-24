@@ -168,6 +168,11 @@
     protected override async Task OnInitializedAsync()
     {
         _windData = await windService.GetWindDataAsync();
+        // Temorary unil fixing implementation for getting local time zone from browser
+        _windData?.ForEach(wind =>
+        {
+            wind.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(wind.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+        });
 
         _hubConnection = new HubConnectionBuilder()
         .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
@@ -175,11 +180,15 @@
 
         _hubConnection.On<WindDTO>("ReceiveLatestWindData", wind =>
         {
-            if (_windData.Count >= 15)
+            if (_windData?.Count >= 15)
             {
                 _windData.RemoveAt(_windData.Count - 1);
             }
-            _windData.Insert(0, wind);
+
+            // Temorary unil fixing implementation for getting local time zone from browser
+            wind.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(wind.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+            _windData?.Insert(0, wind);
+
             InvokeAsync(StateHasChanged);
         });
 

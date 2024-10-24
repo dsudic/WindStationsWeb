@@ -89,6 +89,11 @@
     protected override async Task OnInitializedAsync()
     {
         _temperatureData = await environmentService.GetTemperatureDataAsync();
+        // Temorary unil fixing implementation for getting local time zone from browser
+        _temperatureData?.ForEach(t =>
+        {
+            t.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(t.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+        });
 
         _hubConnection = new HubConnectionBuilder()
         .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
@@ -96,11 +101,15 @@
 
         _hubConnection.On<RecordDTO>("ReceiveLatestTemperatureData", temperature =>
         {
-            if (_temperatureData.Count >= 15)
+            if (_temperatureData?.Count >= 15)
             {
                 _temperatureData.RemoveAt(_temperatureData.Count - 1);
             }
-            _temperatureData.Insert(0, temperature);
+
+            // Temorary unil fixing implementation for getting local time zone from browser
+            temperature.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(temperature.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+            _temperatureData?.Insert(0, temperature);
+
             InvokeAsync(StateHasChanged);
         });
 

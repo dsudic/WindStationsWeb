@@ -7,6 +7,8 @@
 @inject NavigationManager navigation
 @implements IAsyncDisposable
 
+<InitializeTimeZone />
+
 <div class="main-container">
     <SfAppBar CssClass="custom-appbar">
         <img src="images/windsock.png" width="30" alt="Wind sock" style="margin: 0px 10px" />
@@ -39,7 +41,7 @@
 @code {
     private const byte _InactivityPeriodMinutes = 4;
     private uint? _batteryStatus;
-    private DateTime _latestTimestamp;
+    private DateTime _latestTimestampUtc;
     private bool _isOnline = false;
     private HubConnection? _hubConnection;
     private PeriodicTimer? _timer;
@@ -49,7 +51,7 @@
         var currentBatteryVoltage = await batteryService.GetBatteryVoltageAsync();
         GetBatteryStatus(currentBatteryVoltage);
 
-        _latestTimestamp = await messageService.GetLatestTimestampAsync();
+        _latestTimestampUtc = await messageService.GetLatestTimestampAsync();
         _ = StartCheckConnectionStatusAsync();
 
         _hubConnection = new HubConnectionBuilder()
@@ -58,7 +60,7 @@
 
         _hubConnection.On<DateTime, float>("ReceiveLatestStatusData", (timestamp, batteryVoltage) =>
         {
-            _latestTimestamp = timestamp;
+            _latestTimestampUtc = timestamp;
             RestartCheckConnectionStatus();
             GetBatteryStatus(batteryVoltage);
 
@@ -70,7 +72,7 @@
 
     private void GetConnectionStatus()
     {
-        TimeSpan timeDiff = DateTime.Now - _latestTimestamp;
+        TimeSpan timeDiff = DateTime.UtcNow - _latestTimestampUtc;
 
         _isOnline = timeDiff.TotalMinutes < _InactivityPeriodMinutes;
     }

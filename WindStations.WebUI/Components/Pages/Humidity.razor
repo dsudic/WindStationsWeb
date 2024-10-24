@@ -73,6 +73,11 @@
     protected override async Task OnInitializedAsync()
     {
         _humidityData = await environmentService.GetHumidityDataAsync();
+        // Temorary unil fixing implementation for getting local time zone from browser
+        _humidityData?.ForEach(h =>
+            {
+                h.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(h.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+            });
 
         _hubConnection = new HubConnectionBuilder()
         .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
@@ -80,11 +85,15 @@
 
         _hubConnection.On<RecordDTO>("ReciveLatestHumidityData", humidity =>
         {
-            if (_humidityData.Count >= 15)
+            if (_humidityData?.Count >= 15)
             {
                 _humidityData.RemoveAt(_humidityData.Count - 1);
             }
-            _humidityData.Insert(0, humidity);
+
+            // Temorary unil fixing implementation for getting local time zone from browser
+            humidity.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(humidity.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+            _humidityData?.Insert(0, humidity);
+
             InvokeAsync(StateHasChanged);
         });
 

@@ -73,6 +73,11 @@
     protected override async Task OnInitializedAsync()
     {
         _pressureData = await environmentService.GetPressureDataAsync();
+        // Temorary unil fixing implementation for getting local time zone from browser
+        _pressureData?.ForEach(p =>
+        {
+            p.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(p.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+        });
 
         _hubConnection = new HubConnectionBuilder()
         .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
@@ -80,11 +85,15 @@
 
         _hubConnection.On<RecordDTO>("ReceiveLatestPressureData", pressure =>
         {
-            if (_pressureData.Count >= 15)
+            if (_pressureData?.Count >= 15)
             {
                 _pressureData.RemoveAt(_pressureData.Count - 1);
             }
-            _pressureData.Insert(0, pressure);
+
+            // Temorary unil fixing implementation for getting local time zone from browser
+            pressure.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(pressure.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+            _pressureData?.Insert(0, pressure);
+
             InvokeAsync(StateHasChanged);
         });
 

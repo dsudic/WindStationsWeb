@@ -28,6 +28,7 @@ builder.Services.AddTransient<IBatteryService, BatteryService>();
 builder.Services.AddSingleton<GradientService>();
 builder.Services.AddTransient<DataUpdateService>();
 builder.Services.AddSignalR();
+builder.Services.AddScoped<TimeProvider, BrowserTimeProvider>();
 
 var app = builder.Build();
 
