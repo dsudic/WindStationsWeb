@@ -79,11 +79,15 @@
 
     private void GetBatteryStatus(float? currentBatteryVoltage)
     {
+        const float BatteryVoltageMin = 3.3F;
         const float BatteryVoltageMax = 4.2F;
 
         if (currentBatteryVoltage.HasValue)
         {
-            _batteryStatus = (uint)Math.Round(currentBatteryVoltage.Value / BatteryVoltageMax * 100);
+            var normalizedBatteryVoltage = Math.Min(Math.Max(currentBatteryVoltage.Value, BatteryVoltageMin), BatteryVoltageMax);
+
+            _batteryStatus = (uint)Math.Round(
+                ((normalizedBatteryVoltage - BatteryVoltageMin) / (BatteryVoltageMax - BatteryVoltageMin)) * 100);
         }
         else
         {
