@@ -8,16 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Blazor.Bootstrap" Version="3.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.8" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.8">
+    <PackageReference Include="Blazor.Bootstrap" Version="3.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Syncfusion.Blazor.Charts" Version="27.1.50" />
-    <PackageReference Include="Syncfusion.Blazor.Navigations" Version="27.1.50" />
-    <PackageReference Include="Syncfusion.Blazor.Notifications" Version="27.1.50" />
-    <PackageReference Include="Syncfusion.Blazor.Themes" Version="27.1.50" />
+    <PackageReference Include="Syncfusion.Blazor.Charts" Version="27.1.58" />
+    <PackageReference Include="Syncfusion.Blazor.Navigations" Version="27.1.58" />
+    <PackageReference Include="Syncfusion.Blazor.Notifications" Version="27.1.58" />
+    <PackageReference Include="Syncfusion.Blazor.Themes" Version="27.1.58" />
   </ItemGroup>
 
   <ItemGroup>
