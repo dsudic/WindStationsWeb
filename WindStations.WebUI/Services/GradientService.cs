@@ -2,46 +2,61 @@
 using WindStations.WebUI.Components;
 
 namespace WindStations.WebUI.Services;
-
 public class GradientService
 {
-    public List<GradientRange> WindGradients { get; } = [
-        new GradientRange(min: 0, max: 6, color: KnownColor.White),
-        new GradientRange(min: 6, max: 12, color: KnownColor.DeepSkyBlue),
-        new GradientRange(min: 12, max: 18, color: KnownColor.LimeGreen),
-        new GradientRange(min: 18, max: 27, color: KnownColor.DarkOrange),
-        new GradientRange(min: 27, max: 34, color: KnownColor.Red),
-        new GradientRange(min: 34, max: 40, color: KnownColor.DeepPink),
-        new GradientRange(min: 40, max: int.MaxValue, color: KnownColor.DarkViolet)
+    public List<GradientStop> WindGradientStops { get; } = [
+        new GradientStop(value: 0, color: Color.FromArgb(240, 244, 245)),
+        new GradientStop(value: 7, color: Color.FromArgb(88, 208, 223)),
+        new GradientStop(value: 14, color: Color.FromArgb(41, 193, 58)),
+        new GradientStop(value: 20, color: Color.FromArgb(225, 226, 31)),
+        new GradientStop(value: 27, color: Color.FromArgb(214, 131, 24)),
+        new GradientStop(value: 34, color: Color.FromArgb(212, 32, 32)),
+        new GradientStop(value: 42, color: Color.FromArgb(119, 14, 206)),
+        new GradientStop(value: 50, color: Color.FromArgb(49, 18, 72))
         ];
 
-    public KnownColor GetRangeColor(double value)
+    public string GetGradientColor(double value)
     {
-        foreach (var windGradient in WindGradients)
+        var lowerGradientStop = WindGradientStops.LastOrDefault(gradientStop => gradientStop.Value <= value) ?? WindGradientStops.First();
+        var upperGradientStop = WindGradientStops.FirstOrDefault(gradientStop => gradientStop.Value >= value) ?? WindGradientStops.Last();
+
+        if (lowerGradientStop == upperGradientStop)
         {
-            if ((value < windGradient.Max) && (value >= windGradient.Min))
-            {
-                return windGradient.Color;
-            }
+            return ColorTranslator.ToHtml(lowerGradientStop.Color);
         }
 
-        return KnownColor.Gray;
+        var fraction = (value - lowerGradientStop.Value) / (upperGradientStop.Value - lowerGradientStop.Value);
+
+        return ColorTranslator.ToHtml(InterpolateColor(lowerGradientStop.Color, upperGradientStop.Color, fraction));
     }
 
     public string GetGradientStops(double maxValue)
     {
-        var stops = new System.Text.StringBuilder();
+        var gradientStops = new System.Text.StringBuilder();
         const double GradientOpacity = 0.4;
 
-        foreach (var windGradient in WindGradients)
+        var includedGradientStops = WindGradientStops.Where(gradientStop => gradientStop.Value < maxValue).ToList();
+
+        foreach (var gradientStop in includedGradientStops)
         {
-            if ((windGradient.Max <= maxValue) || ((maxValue <= windGradient.Max) && (maxValue >= windGradient.Min)))
-            {
-                var offset = (windGradient.Max / maxValue) * 100;
-                stops.AppendLine($"<stop offset='{offset}%' style='stop-color:{windGradient.Color};stop-opacity: {GradientOpacity}'/>");
-            }
+            gradientStops.AppendLine($"<stop offset=\"{gradientStop.Value / maxValue * 100}%\" " +
+                $"stop-color=\"{ColorTranslator.ToHtml(gradientStop.Color)}\" " +
+                $"stop-opacity=\"{GradientOpacity}\"/>");
         }
 
-        return stops.ToString();
+        gradientStops.AppendLine($"<stop offset=\"100%\" " +
+            $"stop-color=\"{GetGradientColor(maxValue)}\" " +
+            $"stop-opacity=\"{GradientOpacity}\"/>");
+
+        return gradientStops.ToString();
+    }
+
+    private static Color InterpolateColor(Color firstColor, Color secondColor, double fraction)
+    {
+        var r = (byte)(firstColor.R + (secondColor.R - firstColor.R) * fraction);
+        var g = (byte)(firstColor.G + (secondColor.G - firstColor.G) * fraction);
+        var b = (byte)(firstColor.B + (secondColor.B - firstColor.B) * fraction);
+
+        return Color.FromArgb(r, g, b);
     }
 }

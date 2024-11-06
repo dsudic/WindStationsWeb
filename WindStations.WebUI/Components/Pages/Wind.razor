@@ -97,11 +97,9 @@
                 <ChartSeries DataSource="@_windData"
                              XName="Timestamp"
                              YName="MaxSpeed"
-                             DashArray="5,5"
-                             Fill="url(#wind-gradient)"
+                             Fill="url(#max-wind-gradient)"
                              Type="ChartSeriesType.SplineArea"
                              SplineType="SplineType.Monotonic">
-                    <ChartSeriesBorder Width="0.3" Color="gray"></ChartSeriesBorder>
                     <ChartMarker Visible="false">
                         <ChartDataLabel Visible="true" Name="Direction" Position="Syncfusion.Blazor.Charts.LabelPosition.Top">
                             <Template>
@@ -119,10 +117,11 @@
                 <ChartSeries DataSource="@_windData"
                              XName="Timestamp"
                              YName="AvgSpeed"
-                             Fill="black"
-                             Type="ChartSeriesType.Spline"
+                             Fill="url(#avg-wind-gradient)"
+                             Type="ChartSeriesType.SplineArea"
                              SplineType="SplineType.Monotonic">
-                    <ChartMarker Visible="true" Fill="black" Height="3" Width="3" Shape="ChartShape.Circle">
+                    <ChartSeriesBorder Color="gray" Width="0.3"></ChartSeriesBorder>
+                    <ChartMarker Visible="false">
                         <ChartDataLabel Visible="true" Name="Direction" Position="Syncfusion.Blazor.Charts.LabelPosition.Bottom">
                             <Template>
                                 @{
@@ -153,8 +152,16 @@
 
         <svg style="height: 0">
             <defs>
-                <linearGradient id="wind-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                <linearGradient id="max-wind-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
                     @((MarkupString)gradientService.GetGradientStops(_windData.DefaultIfEmpty().Max(m => m?.MaxSpeed ?? default)))
+                </linearGradient>
+            </defs>
+        </svg>
+
+        <svg style="height: 0">
+            <defs>
+                <linearGradient id="avg-wind-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                    @((MarkupString)gradientService.GetGradientStops(_windData.DefaultIfEmpty().Max(m => m?.AvgSpeed ?? default)))
                 </linearGradient>
             </defs>
         </svg>

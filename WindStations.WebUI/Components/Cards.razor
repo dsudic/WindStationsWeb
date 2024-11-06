@@ -10,8 +10,8 @@
     <NavLink href="wind" class="col-6 col-lg-3 nav-card">
         @if (_isDataReady)
         {
-            <div id="wind" class="e-card @_isWindSelected @(((_currentWindSpeed ?? 0) < gradientService.WindGradients[0].Max) ? "low" : "")"
-                 style="--wind-color: @gradientService.GetRangeColor(_currentWindSpeed ?? 0)" @onclick="windClick">
+            <div id="wind" class="e-card @_isWindSelected @(((_currentWindSpeed ?? 0) <= gradientService.WindGradientStops[1].Value) ? "low" : "")"
+                 style="--wind-color: @gradientService.GetGradientColor(_currentWindSpeed ?? 0)" @onclick="windClick">
                 <div style="display: flex; justify-content: flex-start">
                     <h3>@(_currentWindSpeed.HasValue ? Math.Round(_currentWindSpeed.Value) : "NaN") kts</h3>
                     @* <img id="wind-direction" src="images/arrow.png" alt="Direction" style="transform: rotate(@(direction)deg)" /> *@
