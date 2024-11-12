@@ -52,7 +52,7 @@
         GetBatteryStatus(currentBatteryVoltage);
 
         _latestTimestampUtc = await messageService.GetLatestTimestampAsync();
-        _ = StartCheckConnectionStatusAsync();
+        _ = StartConnectionStatusCheckAsync();
 
         _hubConnection = new HubConnectionBuilder()
         .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
@@ -61,7 +61,7 @@
         _hubConnection.On<DateTime, float>("ReceiveLatestStatusData", (timestamp, batteryVoltage) =>
         {
             _latestTimestampUtc = timestamp;
-            RestartCheckConnectionStatus();
+            RestartConnectionStatusCheck();
             GetBatteryStatus(batteryVoltage);
 
             InvokeAsync(StateHasChanged);
@@ -95,7 +95,7 @@
         }
     }
 
-    private async Task StartCheckConnectionStatusAsync()
+    private async Task StartConnectionStatusCheckAsync()
     {
         _timer = new PeriodicTimer(TimeSpan.FromMinutes(_InactivityPeriodMinutes));
 
@@ -113,10 +113,10 @@
         while (await _timer.WaitForNextTickAsync());
     }
 
-    private void RestartCheckConnectionStatus()
+    private void RestartConnectionStatusCheck()
     {
         _timer?.Dispose();
-        _ = StartCheckConnectionStatusAsync();
+        _ = StartConnectionStatusCheckAsync();
     }
 
     public async ValueTask DisposeAsync()

@@ -10,8 +10,8 @@
     <NavLink href="wind" class="col-6 col-lg-3 nav-card">
         @if (_isDataReady)
         {
-            <div id="wind" class="e-card @_isWindSelected @(((_currentWindSpeed ?? 0) <= gradientService.WindGradientStops[1].Value) ? "low" : "")"
-                 style="--wind-color: @gradientService.GetGradientColor(_currentWindSpeed ?? 0)" @onclick="windClick">
+            <div id="wind" class="e-card @_isWindSelected @(((_currentWindSpeed ?? 0) <= gradientService.WindGradientStops[1].Value) ? "low" : string.Empty)"
+                 style="--wind-color: @gradientService.GetGradientColor(_currentWindSpeed ?? 0)">
                 <div style="display: flex; justify-content: flex-start">
                     <h3>@(_currentWindSpeed.HasValue ? Math.Round(_currentWindSpeed.Value) : "NaN") kts</h3>
                     @* <img id="wind-direction" src="images/arrow.png" alt="Direction" style="transform: rotate(@(direction)deg)" /> *@
@@ -73,7 +73,7 @@
     <NavLink href="temperature" class="col-6 col-lg-3 nav-card">
         @if (_isDataReady)
         {
-            <div id="temperature" class="e-card @_isTemperatureSelected" style="--temperature-color: #e56c30" @onclick="temperatureClick">
+            <div id="temperature" class="e-card @_isTemperatureSelected" style="--temperature-color: #e56c30">
                 <h3>@(_currentTemperature.HasValue ? Math.Round(_currentTemperature.Value) : "NaN") °C</h3>
                 <div>
                     <span>Temperature</span>
@@ -122,7 +122,7 @@
     <NavLink href="humidity" class="col-6 col-lg-3 nav-card">
         @if (_isDataReady)
         {
-            <div id="humidity" class="e-card @_isHumiditySelected" style="--humidity-color: #308136" @onclick="humidityClick">
+            <div id="humidity" class="e-card @_isHumiditySelected" style="--humidity-color: #308136">
                 <h3>@(_currentHumidity.HasValue ? Math.Round(_currentHumidity.Value) : "NaN")%</h3>
                 <div>
                     <span>Humidity</span>
@@ -166,7 +166,7 @@
     <NavLink href="pressure" class="col-6 col-lg-3 nav-card">
         @if (_isDataReady)
         {
-            <div id="pressure" class="e-card @_isPressureSelected" style="--pressure-color: #2140dc" @onclick="pressureClick">
+            <div id="pressure" class="e-card @_isPressureSelected" style="--pressure-color: #2140dc">
                 <h3>@(_currentPressure.HasValue ? Math.Round(_currentPressure.Value) : "NaN") hPa</h3>
                 <div>
                     <span>Pressure</span>
@@ -230,10 +230,11 @@
     private float? _currentTemperature;
     private float? _currentHumidity;
     private float? _currentPressure;
-    private string _isWindSelected = "selected";
-    private string _isTemperatureSelected = "";
-    private string _isHumiditySelected = "";
-    private string _isPressureSelected = "";
+    private string _selectedCard = string.Empty;
+    private string _isWindSelected = string.Empty;
+    private string _isTemperatureSelected = string.Empty;
+    private string _isHumiditySelected = string.Empty;
+    private string _isPressureSelected = string.Empty;
     private bool _isDataReady = false;
     private HubConnection? _hubConnection;
 
@@ -245,6 +246,10 @@
         _currentHumidity = await environmentService.GetLatestHumidityAsync();
         _currentPressure = await environmentService.GetLatestPressureAsync();
         _isDataReady = true;
+
+        _selectedCard = navigation.ToBaseRelativePath(navigation.Uri);
+        navigation.LocationChanged += HandleLocationChanged;
+        UpdateSelectedCard();
 
         _hubConnection = new HubConnectionBuilder()
        .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
@@ -278,36 +283,19 @@
         await _hubConnection.StartAsync();
     }
 
-    private void windClick()
+    private void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        _isWindSelected = "selected";
-        _isTemperatureSelected = "";
-        _isHumiditySelected = "";
-        _isPressureSelected = "";
+        _selectedCard = navigation.ToBaseRelativePath(e.Location);
+        UpdateSelectedCard();
+        StateHasChanged();
     }
 
-    private void temperatureClick()
+    private void UpdateSelectedCard()
     {
-        _isWindSelected = "";
-        _isTemperatureSelected = "selected";
-        _isHumiditySelected = "";
-        _isPressureSelected = "";
-    }
-
-    private void humidityClick()
-    {
-        _isWindSelected = "";
-        _isTemperatureSelected = "";
-        _isHumiditySelected = "selected";
-        _isPressureSelected = "";
-    }
-
-    private void pressureClick()
-    {
-        _isWindSelected = "";
-        _isTemperatureSelected = "";
-        _isHumiditySelected = "";
-        _isPressureSelected = "selected";
+        _isWindSelected = (_selectedCard == "wind" || _selectedCard == string.Empty) ? "selected" : string.Empty;
+        _isTemperatureSelected = (_selectedCard == "temperature") ? "selected" : string.Empty;
+        _isHumiditySelected = (_selectedCard == "humidity") ? "selected" : string.Empty;
+        _isPressureSelected = (_selectedCard == "pressure") ? "selected" : string.Empty;
     }
 
     public async ValueTask DisposeAsync()
@@ -316,5 +304,7 @@
         {
             await _hubConnection.DisposeAsync();
         }
+
+        navigation.LocationChanged -= HandleLocationChanged;
     }
 }
