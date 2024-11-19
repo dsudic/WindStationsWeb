@@ -1,0 +1,131 @@
+﻿@inherits LayoutComponentBase
+@using Syncfusion.Blazor.Navigations
+@using Microsoft.AspNetCore.SignalR.Client
+@using WindStations.Core.DTOs
+@inject WindStations.Core.Interfaces.IBatteryService batteryService
+@inject WindStations.Core.Interfaces.IMessagePersistenceService messageService
+@inject NavigationManager navigation
+@implements IAsyncDisposable
+
+<InitializeTimeZone />
+
+<div class="main-container">
+    <SfAppBar CssClass="custom-appbar">
+        <img src="images/windsock.png" width="30" alt="Wind sock" style="margin: 0px 10px" />
+        <div style="font-size:22px; font-weight:600">
+            WindStation Omiš
+            <i id="@(_isOnline ? "online" : "offline")" class="bi bi-circle-fill" style="margin-left: 10px"></i>
+        </div>
+
+        <AppBarSpacer></AppBarSpacer>
+
+        <img src="images/battery.png" width="26" alt="Battery" />
+        <div style="margin-right: 5px; font-size: 18px">
+            @(_batteryStatus.HasValue ? _batteryStatus : "NaN")%
+        </div>
+    </SfAppBar>
+
+    <Cards></Cards>
+
+    <div style="padding: 20px 0px">
+        @Body
+    </div>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    private const byte _InactivityPeriodMinutes = 4;
+    private uint? _batteryStatus;
+    private DateTime _latestTimestampUtc;
+    private bool _isOnline = false;
+    private HubConnection? _hubConnection;
+    private PeriodicTimer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var currentBatteryVoltage = await batteryService.GetBatteryVoltageAsync();
+        GetBatteryStatus(currentBatteryVoltage);
+
+        _latestTimestampUtc = await messageService.GetLatestTimestampAsync();
+        _ = StartConnectionStatusCheckAsync();
+
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
+        .Build();
+
+        _hubConnection.On<DateTime, float>("ReceiveLatestStatusData", (timestamp, batteryVoltage) =>
+        {
+            _latestTimestampUtc = timestamp;
+            RestartConnectionStatusCheck();
+            GetBatteryStatus(batteryVoltage);
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    private void GetConnectionStatus()
+    {
+        TimeSpan timeDiff = DateTime.UtcNow - _latestTimestampUtc;
+
+        _isOnline = timeDiff.TotalMinutes < _InactivityPeriodMinutes;
+    }
+
+    private void GetBatteryStatus(float? currentBatteryVoltage)
+    {
+        const float BatteryVoltageMin = 3.3F;
+        const float BatteryVoltageMax = 4.2F;
+
+        if (currentBatteryVoltage.HasValue)
+        {
+            var normalizedBatteryVoltage = Math.Min(Math.Max(currentBatteryVoltage.Value, BatteryVoltageMin), BatteryVoltageMax);
+
+            _batteryStatus = (uint)Math.Round(
+                ((normalizedBatteryVoltage - BatteryVoltageMin) / (BatteryVoltageMax - BatteryVoltageMin)) * 100);
+        }
+        else
+        {
+            _batteryStatus = null;
+        }
+    }
+
+    private async Task StartConnectionStatusCheckAsync()
+    {
+        _timer = new PeriodicTimer(TimeSpan.FromMinutes(_InactivityPeriodMinutes));
+
+        do
+        {
+            var isOnline = _isOnline;
+
+            GetConnectionStatus();
+
+            if (isOnline != _isOnline)
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        while (await _timer.WaitForNextTickAsync());
+    }
+
+    private void RestartConnectionStatusCheck()
+    {
+        _timer?.Dispose();
+        _ = StartConnectionStatusCheckAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+
+        _timer?.Dispose();
+    }
+}

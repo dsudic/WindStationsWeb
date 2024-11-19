@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>ef386512-54fc-457a-85df-e4f342171037</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Blazor.Bootstrap" Version="3.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Syncfusion.Blazor.Charts" Version="27.1.58" />
+    <PackageReference Include="Syncfusion.Blazor.Navigations" Version="27.1.58" />
+    <PackageReference Include="Syncfusion.Blazor.Notifications" Version="27.1.58" />
+    <PackageReference Include="Syncfusion.Blazor.Themes" Version="27.1.58" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WindStations.Core\WindStations.Core.csproj" />
+    <ProjectReference Include="..\WindStations.Infrastructure\WindStations.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

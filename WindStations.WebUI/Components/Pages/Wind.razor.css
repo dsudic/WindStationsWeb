@@ -1,0 +1,11 @@
+﻿#chart-direction-arrow {
+    width: 8px;
+    height: 12px;
+}
+
+@media (min-width: 992px) {
+    #chart-direction-arrow {
+        width: 10px;
+        height: 15px;
+    }
+}

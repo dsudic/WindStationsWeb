@@ -1,0 +1,212 @@
+﻿@page "/"
+@page "/wind"
+
+@using System.Drawing
+@using Microsoft.AspNetCore.SignalR.Client
+@using WindStations.Core.DTOs
+@inject WindStations.Core.Interfaces.IWindService windService
+@inject WindStations.WebUI.Services.GradientService gradientService
+@inject NavigationManager navigation
+@implements IAsyncDisposable
+
+<h3>Wind</h3>
+
+<div style="height: 450px">
+    @if (_windData is null)
+    {
+        <SfSkeleton Width="100%" Height="100%" Effect="ShimmerEffect.Wave"></SfSkeleton>
+    }
+    else
+    {
+        <SfChart Background="transparent">
+            <ChartArea>
+                <ChartAreaBorder Width="0"></ChartAreaBorder>
+            </ChartArea>
+
+            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime"
+                               Format="HH:mm:ss"
+                               LabelFormat="HH:mm"
+                               LabelPlacement="LabelPlacement.OnTicks"
+                               EdgeLabelPlacement="EdgeLabelPlacement.Shift"
+                               PlotOffset="10">
+                <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+                <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+            </ChartPrimaryXAxis>
+
+            <ChartPrimaryYAxis LabelFormat="{value} kts" RangePadding="ChartRangePadding.Auto" Minimum="0">
+                <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+                <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+
+                @if (_windData.Count != 0)
+                {
+                    <ChartStriplines>
+                        <ChartStripline Start=@_windData.Max(w => w.MaxSpeed)
+                                        SizeType="SizeType.Pixel"
+                                        DashArray="3,3"
+                                        Size="1"
+                                        Color="#D93237"
+                                        Text="Max"
+                                        HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End"
+                                        VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.End">
+                            <ChartStriplineTextStyle Color="#D93237" Size="14px" FontWeight="500" FontFamily="Roboto"></ChartStriplineTextStyle>
+                        </ChartStripline>
+                    </ChartStriplines>
+                }
+            </ChartPrimaryYAxis>
+
+            @if (_windData.Count != 0)
+            {
+                <ChartTooltipSettings Enable="true" Shared="true">
+                    <Template>
+                        @{
+                            var data = context as List<ChartTooltipInfo>;
+
+                            <div class="tooltip-table">
+                                <table style="border-radius: 3px; background-color: rgba(0,0,0,0.6); color: white">
+                                    <tr style="border-bottom: 1px solid gray">
+                                        <th colspan="3">
+                                            @data[0].X
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <td>Max:</td>
+                                        <td>@data[0].Y</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Avg:</td>
+                                        <td>
+                                            @data[1].Y
+                                        </td>
+                                        <td>
+                                            <img src="images/arrow.png" alt="Arrow" height="13" width="8"
+                                                 style="transform: rotate(@(_windData[(int)data[0].PointIndex].Direction)deg); margin: auto 10px; filter: invert(100%)" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Min:</td>
+                                        <td>@data[2].Y</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        }
+                    </Template>
+                </ChartTooltipSettings>
+            }
+
+            <ChartSeriesCollection>
+                <ChartSeries DataSource="@_windData"
+                             XName="Timestamp"
+                             YName="MaxSpeed"
+                             Fill="url(#max-wind-gradient)"
+                             Type="ChartSeriesType.SplineArea"
+                             SplineType="SplineType.Monotonic">
+                    <ChartMarker Visible="false">
+                        <ChartDataLabel Visible="true" Name="Direction" Position="Syncfusion.Blazor.Charts.LabelPosition.Top">
+                            <Template>
+                                @{
+                                    var data = context as ChartDataPointInfo;
+                                    <div>@Math.Round(Convert.ToDouble(data.Y), 1)</div>
+                                }
+                            </Template>
+                        </ChartDataLabel>
+                    </ChartMarker>
+                </ChartSeries>
+            </ChartSeriesCollection>
+
+            <ChartSeriesCollection>
+                <ChartSeries DataSource="@_windData"
+                             XName="Timestamp"
+                             YName="AvgSpeed"
+                             Fill="url(#avg-wind-gradient)"
+                             Type="ChartSeriesType.SplineArea"
+                             SplineType="SplineType.Monotonic">
+                    <ChartSeriesBorder Color="gray" Width="0.3"></ChartSeriesBorder>
+                    <ChartMarker Visible="false">
+                        <ChartDataLabel Visible="true" Name="Direction" Position="Syncfusion.Blazor.Charts.LabelPosition.Bottom">
+                            <Template>
+                                @{
+                                    var data = context as ChartDataPointInfo;
+                                    <div style="display:flex;flex-direction:column;align-items:center">
+                                        <div>@Math.Round(Convert.ToDouble(data.Y), 1)</div>
+                                        <img id="chart-direction-arrow" src="images/arrow.png" alt="Arrow" style="transform:rotate(@(data.Text)deg)" />
+                                    </div>
+                                }
+                            </Template>
+                        </ChartDataLabel>
+                    </ChartMarker>
+                </ChartSeries>
+            </ChartSeriesCollection>
+
+            <ChartSeriesCollection>
+                <ChartSeries DataSource="@_windData"
+                             XName="Timestamp"
+                             YName="MinSpeed"
+                             Fill="gray"
+                             DashArray="5,5"
+                             Type="ChartSeriesType.Spline"
+                             SplineType="SplineType.Monotonic">
+                </ChartSeries>
+            </ChartSeriesCollection>
+
+        </SfChart>
+
+        <svg style="height: 0">
+            <defs>
+                <linearGradient id="max-wind-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                    @((MarkupString)gradientService.GetGradientStops(_windData.DefaultIfEmpty().Max(m => m?.MaxSpeed ?? default)))
+                </linearGradient>
+            </defs>
+        </svg>
+
+        <svg style="height: 0">
+            <defs>
+                <linearGradient id="avg-wind-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                    @((MarkupString)gradientService.GetGradientStops(_windData.DefaultIfEmpty().Max(m => m?.AvgSpeed ?? default)))
+                </linearGradient>
+            </defs>
+        </svg>
+    }
+</div>
+
+@code {
+    private List<WindDTO>? _windData;
+    private HubConnection? _hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _windData = await windService.GetWindDataAsync();
+        // Temorary unil fixing implementation for getting local time zone from browser
+        _windData?.ForEach(wind =>
+        {
+            wind.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(wind.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+        });
+
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
+        .Build();
+
+        _hubConnection.On<WindDTO>("ReceiveLatestWindData", wind =>
+        {
+            if (_windData?.Count >= 15)
+            {
+                _windData.RemoveAt(_windData.Count - 1);
+            }
+
+            // Temorary unil fixing implementation for getting local time zone from browser
+            wind.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(wind.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+            _windData?.Insert(0, wind);
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}

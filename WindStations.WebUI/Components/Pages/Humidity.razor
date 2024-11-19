@@ -1,0 +1,110 @@
+﻿@page "/humidity"
+
+@using Microsoft.AspNetCore.SignalR.Client
+@using WindStations.Core.DTOs
+@inject WindStations.Core.Interfaces.IEnvironmentService environmentService
+@inject NavigationManager navigation
+@implements IAsyncDisposable
+
+<h3>Humidity</h3>
+
+<div style="height: 450px">
+    @if (_humidityData is null)
+    {
+        <SfSkeleton Width="100%" Height="100%" Effect="ShimmerEffect.Wave"></SfSkeleton>
+    }
+    else
+    {
+        <SfChart Background="transparent">
+            <ChartArea>
+                <ChartAreaBorder Width="0"></ChartAreaBorder>
+            </ChartArea>
+
+            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime"
+                               Format="HH:mm:ss"
+                               LabelFormat="HH:mm"
+                               LabelPlacement="LabelPlacement.OnTicks"
+                               EdgeLabelPlacement="EdgeLabelPlacement.Shift"
+                               PlotOffset="10">
+                <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+                <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+            </ChartPrimaryXAxis>
+
+            <ChartPrimaryYAxis LabelFormat="{value} %" RangePadding="ChartRangePadding.Auto" Minimum="0">
+                <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+                <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+            </ChartPrimaryYAxis>
+
+            <ChartTooltipSettings Enable="true" Header="${point.x}" Format="${point.y}"></ChartTooltipSettings>
+
+            <ChartSeriesCollection>
+                <ChartSeries DataSource="@_humidityData"
+                             XName="Timestamp"
+                             YName="Value"
+                             Fill="url(#humidity-gradient)"
+                             Type="ChartSeriesType.Area">
+                    <ChartSeriesBorder Width="2" Color="#00810a"></ChartSeriesBorder>
+                    <ChartMarker>
+                        <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Top">
+                            <Template>
+                                <div>@Math.Round(Convert.ToDouble(context.PointY), 1)</div>
+                            </Template>
+                        </ChartDataLabel>
+                    </ChartMarker>
+                </ChartSeries>
+            </ChartSeriesCollection>
+        </SfChart>
+
+        <svg style="height: 0">
+            <defs>
+                <linearGradient id="humidity-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                    <stop offset="0%" style="stop-color: white; stop-opacity: 0.5" />
+                    <stop offset="100%" style="stop-color: #308136; stop-opacity: 0.5" />
+                </linearGradient>
+            </defs>
+        </svg>
+    }
+</div>
+
+@code {
+    private List<RecordDTO>? _humidityData;
+    private HubConnection? _hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _humidityData = await environmentService.GetHumidityDataAsync();
+        // Temorary unil fixing implementation for getting local time zone from browser
+        _humidityData?.ForEach(h =>
+            {
+                h.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(h.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+            });
+
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
+        .Build();
+
+        _hubConnection.On<RecordDTO>("ReciveLatestHumidityData", humidity =>
+        {
+            if (_humidityData?.Count >= 15)
+            {
+                _humidityData.RemoveAt(_humidityData.Count - 1);
+            }
+
+            // Temorary unil fixing implementation for getting local time zone from browser
+            humidity.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(humidity.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+            _humidityData?.Insert(0, humidity);
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}

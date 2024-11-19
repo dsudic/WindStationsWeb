@@ -1,0 +1,126 @@
+﻿@page "/temperature"
+
+@using Microsoft.AspNetCore.SignalR.Client
+@using WindStations.Core.DTOs
+@inject WindStations.Core.Interfaces.IEnvironmentService environmentService
+@inject NavigationManager navigation
+@implements IAsyncDisposable
+
+<h3>Temperature</h3>
+
+<div style="height: 450px">
+    @if (_temperatureData is null)
+    {
+        <SfSkeleton Width="100%" Height="100%" Effect="ShimmerEffect.Wave"></SfSkeleton>
+    }
+    else
+    {
+        <SfChart Background="transparent">
+            <ChartArea>
+                <ChartAreaBorder Width="0"></ChartAreaBorder>
+            </ChartArea>
+
+            <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime"
+                               Format="HH:mm:ss"
+                               LabelFormat="HH:mm"
+                               LabelPlacement="LabelPlacement.OnTicks"
+                               EdgeLabelPlacement="EdgeLabelPlacement.Shift"
+                               PlotOffset="10">
+                <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+                <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+            </ChartPrimaryXAxis>
+
+            <ChartPrimaryYAxis LabelFormat="{value} °C" RangePadding="ChartRangePadding.Auto">
+                <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+                <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+
+                @if (_temperatureData.Count != 0)
+                {
+                    <ChartStriplines>
+                        <ChartStripline Start=@_temperatureData.Max(temperature => temperature.Value)
+                                        SizeType="SizeType.Pixel"
+                                        DashArray="3,3"
+                                        Size="1"
+                                        Color="#d93237"
+                                        Text="Max"
+                                        HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End"
+                                        VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.End">
+                            <ChartStriplineTextStyle Color="#d93237" Size="14px" FontWeight="500" FontStyle="Roboto"></ChartStriplineTextStyle>
+                        </ChartStripline>
+                    </ChartStriplines>
+                }
+            </ChartPrimaryYAxis>
+
+            <ChartTooltipSettings Enable="true" Header="${point.x}" Format="${point.y}"></ChartTooltipSettings>
+
+            <ChartSeriesCollection>
+                <ChartSeries DataSource="@_temperatureData"
+                             XName="Timestamp"
+                             YName="Value"
+                             Fill="url(#temperature-gradient)"
+                             Type="ChartSeriesType.Area">
+                    <ChartSeriesBorder Width="2" Color="#e94d00"></ChartSeriesBorder>
+                    <ChartMarker>
+                        <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Top">
+                            <Template>
+                                <div>@Math.Round(Convert.ToDouble(context.PointY), 1)</div>
+                            </Template>
+                        </ChartDataLabel>
+                    </ChartMarker>
+                </ChartSeries>
+            </ChartSeriesCollection>
+        </SfChart>
+
+        <svg style="height: 0">
+            <defs>
+                <linearGradient id="temperature-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                    <stop offset="0%" style="stop-color: white; stop-opacity: 0.5" />
+                    <stop offset="100%" style="stop-color: #e56c30; stop-opacity: 0.5" />
+                </linearGradient>
+            </defs>
+        </svg>
+    }
+</div>
+
+@code {
+    private List<RecordDTO>? _temperatureData;
+    private HubConnection? _hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _temperatureData = await environmentService.GetTemperatureDataAsync();
+        // Temorary unil fixing implementation for getting local time zone from browser
+        _temperatureData?.ForEach(t =>
+        {
+            t.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(t.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+        });
+
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(navigation.ToAbsoluteUri("/dataUpdates"))
+        .Build();
+
+        _hubConnection.On<RecordDTO>("ReceiveLatestTemperatureData", temperature =>
+        {
+            if (_temperatureData?.Count >= 15)
+            {
+                _temperatureData.RemoveAt(_temperatureData.Count - 1);
+            }
+
+            // Temorary unil fixing implementation for getting local time zone from browser
+            temperature.Timestamp = TimeZoneInfo.ConvertTimeFromUtc(temperature.Timestamp, TimeZoneInfo.FindSystemTimeZoneById("Europe/Zagreb"));
+            _temperatureData?.Insert(0, temperature);
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}
