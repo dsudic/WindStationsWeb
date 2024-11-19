@@ -6,13 +6,15 @@ namespace WindStations.Infrastructure.Services;
 public class MqttClientService(IMessagePersistenceService messagePersistenceService) : IMqttClientService
 {
     private IMqttClient? _mqttClient;
+    private const string Broker = "broker.emqx.io";
+    private const string Topic = "windstation/data";
 
     public async Task ConnectAndSubscribe()
     {
         var mqttFactory = new MqttFactory();
 
         _mqttClient = mqttFactory.CreateMqttClient();
-        var mqttClientOptions = new MqttClientOptionsBuilder().WithTcpServer("broker.hivemq.com").Build();
+        var mqttClientOptions = new MqttClientOptionsBuilder().WithTcpServer(Broker).Build();
 
         _mqttClient.ApplicationMessageReceivedAsync += new Func<MqttApplicationMessageReceivedEventArgs, Task>(HandleReceivedMessage);
 
@@ -22,7 +24,7 @@ public class MqttClientService(IMessagePersistenceService messagePersistenceServ
             .WithTopicFilter(
                 f =>
                 {
-                    f.WithTopic("windstation/data");
+                    f.WithTopic(Topic);
                 })
             .Build();
 
